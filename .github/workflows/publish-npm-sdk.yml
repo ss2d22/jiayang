@@ -191,14 +191,15 @@ jobs:
         run: npm publish ./package/*.tgz
 
       # A publish that quietly lost its provenance is one we would rather fail. There is no
-      # documented SLA for the attestation appearing, so this waits rather than checks once.
+      # documented SLA for the attestation appearing; 0.1.1's took about five minutes, so this
+      # waits up to fifteen.
       - name: check the attestation landed
         env:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
           set -euo pipefail
           url="https://registry.npmjs.org/-/npm/v1/attestations/@jiayang-cloud/sdk@$VERSION"
-          for attempt in $(seq 1 12); do
+          for attempt in $(seq 1 90); do
             if curl -fsS "$url" | grep -q '"attestations"'; then
               echo "provenance attested for @jiayang-cloud/sdk@$VERSION"
               exit 0
