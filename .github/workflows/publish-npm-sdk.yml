@@ -1,0 +1,210 @@
+name: publish npm sdk
+
+# Publishes @jiayang-cloud/sdk to npmjs.com when an sdk-node-v* tag lands here.
+#
+# No npm token anywhere. npm trusts this repository and this file *by name* (the trusted publisher
+# recorded against the package on npmjs.com) and mints a short-lived token for the run in exchange
+# for GitHub's OIDC token. Rename this file, move it out of .github/workflows/, or run it from a
+# fork and the exchange stops matching: the publish is refused rather than falling back to
+# anything. Provenance comes from the same exchange, so there is no --provenance flag.
+#
+# This repository has to stay public. npm generates no provenance for a package built in a private
+# one, and sdks/node/package.json asks for provenance, so a private repository here is a failed
+# release rather than a quiet one.
+#
+# Three jobs, and only the last can mint anything. GitHub hands the OIDC capability to every step
+# of a job that has id-token: write, so a dependency run in that job could publish its own
+# @jiayang-cloud/sdk with our provenance on it. `build` packs the tarball, `test` runs the tests
+# against it, and `publish` never sees the source: it publishes the bytes `build` hashed.
+
+on:
+  push:
+    tags: ["sdk-node-v[0-9]+.[0-9]+.[0-9]+", "sdk-node-v[0-9]+.[0-9]+.[0-9]+-*"]
+
+permissions: {}
+
+concurrency:
+  group: publish-npm-sdk
+  cancel-in-progress: false
+
+jobs:
+  # Makes the tarball, with the esbuild, TypeScript and jose the lockfile pins, down to their
+  # integrity hashes. pnpm runs no dependency's install script but esbuild's (pnpm-workspace.yaml),
+  # and vitest's tree is only downloaded here: it runs in `test`, once the tarball already exists.
+  build:
+    # A fork carries the tags but not the trust. Say so here rather than as a registry error.
+    if: github.repository == 'ss2d22/jiayang'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha256: ${{ steps.pack.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          package-manager-cache: false # a release resolves from the registry, not a cache
+
+      - id: version
+        name: check the tag matches the version
+        working-directory: sdks/node
+        run: |
+          set -euo pipefail
+          want=${GITHUB_REF_NAME#sdk-node-v}
+          have=$(node -p "require('./package.json').version")
+          [ "$want" = "$have" ] ||
+            { echo "::error::tag $GITHUB_REF_NAME says $want, package.json says $have"; exit 1; }
+          echo "version=$have" >> "$GITHUB_OUTPUT"
+
+      # From pnpm-lock.yaml, which the private repository's mirror.sh cuts down from its own
+      # lockfile rather than resolving, so every package here is one the SDK is built and tested
+      # with there. A lockfile that doesn't match package.json fails the install instead of
+      # resolving afresh. None of it ships: jose is bundled, and the published package declares no
+      # runtime dependencies (mirror.test.mjs keeps that true).
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm -C sdks/node build
+
+      # What is about to ship, in the log. The hash goes to `publish` as a job output, which no
+      # other job can write: `test` runs vitest's whole tree, in a run whose artifacts it can reach.
+      - id: pack
+        name: pack
+        working-directory: sdks/node
+        env:
+          OUT: ${{ runner.temp }}/package
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT"
+          npm pack --pack-destination "$OUT"
+          [ "$(ls "$OUT" | wc -l)" -eq 1 ] || { echo "::error::expected one tarball"; ls -la "$OUT"; exit 1; }
+          sha256=$(cd "$OUT" && shasum -a 256 ./*.tgz | cut -d' ' -f1)
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+          echo "$sha256"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: npm-package
+          path: ${{ runner.temp }}/package/
+          if-no-files-found: error
+
+  # The typecheck and the tests, run against the dist/ that was packed rather than a second build
+  # of it. vitest brings a large tree of other people's code, pinned but still theirs, so it runs
+  # where there is no credential to take.
+  test:
+    if: github.repository == 'ss2d22/jiayang'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: npm-package
+          path: ${{ runner.temp }}/package
+
+      # test/dist.spec.ts checks what the build produced, and skips itself when there is no dist/.
+      - name: unpack the tarball's dist/ where the tests look for it
+        env:
+          PACKAGE: ${{ runner.temp }}/package
+          UNPACKED: ${{ runner.temp }}/unpacked
+        run: |
+          set -euo pipefail
+          mkdir -p "$UNPACKED"
+          tar -xzf "$PACKAGE"/*.tgz -C "$UNPACKED"
+          cp -R "$UNPACKED/package/dist" sdks/node/dist
+          ls sdks/node/dist/index.mjs
+
+      - run: pnpm -C sdks/node typecheck
+      - run: pnpm -C sdks/node test
+
+  # No contents: read and no checkout. This job sees the tarball and its own identity, nothing else.
+  publish:
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Must match the "Environment name" on the trusted publisher, character for character.
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@jiayang-cloud/sdk
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: npm-package
+          path: package
+
+      - name: check it is the tarball build made
+        env:
+          WANT: ${{ needs.build.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          [ "$(ls package | wc -l)" -eq 1 ] || { echo "::error::expected one tarball"; ls -la package; exit 1; }
+          got=$(cd package && shasum -a 256 ./*.tgz | cut -d' ' -f1)
+          [ "$got" = "$WANT" ] || { echo "::error::the tarball changed after build packed it: $got != $WANT"; exit 1; }
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      # npm does the OIDC exchange silently and gives up quietly, so too old an npm looks exactly
+      # like a misconfigured trusted publisher.
+      - name: check npm is new enough for OIDC
+        run: |
+          set -euo pipefail
+          v=$(npm --version)
+          echo "npm $v"
+          printf '%s\n%s\n' 11.5.1 "$v" | sort -V -C ||
+            { echo "trusted publishing needs npm >= 11.5.1, this runner has $v"; exit 1; }
+
+      # pnpm publish does not do npm's OIDC exchange. This has to be npm. A tarball runs no
+      # lifecycle script, and npm applies the publishConfig packed inside it.
+      - name: publish
+        run: npm publish package/*.tgz
+
+      # A publish that quietly lost its provenance is one we would rather fail. There is no
+      # documented SLA for the attestation appearing, so this waits rather than checks once.
+      - name: check the attestation landed
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          url="https://registry.npmjs.org/-/npm/v1/attestations/@jiayang-cloud/sdk@$VERSION"
+          for attempt in $(seq 1 12); do
+            if curl -fsS "$url" | grep -q '"attestations"'; then
+              echo "provenance attested for @jiayang-cloud/sdk@$VERSION"
+              exit 0
+            fi
+            echo "no attestation yet (attempt $attempt)"
+            sleep 10
+          done
+          echo "::error::published, but no provenance attestation for @jiayang-cloud/sdk@$VERSION"
+          exit 1

@@ -1,0 +1,71 @@
+[workspace]
+resolver = "3"
+members = ["sdks/rust"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.92"
+license = "Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+
+aes-gcm = "0.10"
+anyhow = "1"
+axum = { version = "0.8", features = ["multipart"] }
+base64 = "0.22"
+clap = { version = "4", features = ["derive", "env"] }
+crossterm = "0.29"
+hex = "0.4"
+hmac = "0.12"
+futures-util = { version = "0.3", default-features = false }
+http = "1"
+jsonwebtoken = "9"
+rand = "0.9"
+rmcp = { version = "3", features = ["server", "macros", "transport-io"] }
+schemars = "1"
+ratatui = "0.30"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "multipart"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "macros", "migrate", "uuid", "time", "json"] }
+subtle = "2"
+thiserror = "2"
+time = { version = "0.3", features = ["serde", "formatting", "parsing", "macros"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal", "time", "sync", "process", "io-util", "fs"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace", "limit", "timeout"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+url = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+
+# dist builds shippable binaries with this profile, and treats its presence as the sign that the
+# project is set up for release. It won't build without it.
+# Cargo strips debuginfo from release builds by default, and macOS 26's dyld refuses a stripped
+# proc-macro dylib ("mis-aligned LINKEDIT string pool"), so `cargo build --release` failed on a
+# Mac at sqlx-macros. Only build-time crates need to stay unstripped; what ships is unaffected.
+[profile.release.build-override]
+strip = "none"
+
+[profile.dist]
+inherits = "release"
+lto = "thin"
+
+# RSA key generation in test fixtures is painfully slow unoptimized.
+[profile.dev.package.num-bigint-dig]
+opt-level = 3
+[profile.dev.package.rsa]
+opt-level = 3

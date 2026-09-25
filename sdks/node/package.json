@@ -1,0 +1,118 @@
+{
+	"name": "@jiayang-cloud/sdk",
+	"version": "0.1.0",
+	"description": "Verify who is calling your Jiayang Cloud app.",
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ss2d22/jiayang.git",
+		"directory": "sdks/node"
+	},
+	"homepage": "https://jiayang.cloud",
+	"bugs": "https://github.com/ss2d22/jiayang/issues",
+	"keywords": [
+		"jiayang",
+		"identity",
+		"jwt",
+		"auth",
+		"cloudflare"
+	],
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"types": "./dist/index.d.cts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.mjs"
+			},
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			}
+		},
+		"./node": {
+			"import": {
+				"types": "./dist/node.d.ts",
+				"default": "./dist/node.mjs"
+			},
+			"require": {
+				"types": "./dist/node.d.cts",
+				"default": "./dist/node.cjs"
+			}
+		},
+		"./express": {
+			"import": {
+				"types": "./dist/express.d.ts",
+				"default": "./dist/express.mjs"
+			},
+			"require": {
+				"types": "./dist/express.d.cts",
+				"default": "./dist/express.cjs"
+			}
+		},
+		"./hono": {
+			"import": {
+				"types": "./dist/hono.d.ts",
+				"default": "./dist/hono.mjs"
+			},
+			"require": {
+				"types": "./dist/hono.d.cts",
+				"default": "./dist/hono.cjs"
+			}
+		},
+		"./next": {
+			"import": {
+				"types": "./dist/next.d.ts",
+				"default": "./dist/next.mjs"
+			},
+			"require": {
+				"types": "./dist/next.d.cts",
+				"default": "./dist/next.cjs"
+			}
+		},
+		"./package.json": "./package.json"
+	},
+	"typesVersions": {
+		"*": {
+			"node": [
+				"./dist/node.d.cts"
+			],
+			"express": [
+				"./dist/express.d.cts"
+			],
+			"hono": [
+				"./dist/hono.d.cts"
+			],
+			"next": [
+				"./dist/next.d.cts"
+			]
+		}
+	},
+	"files": [
+		"CHANGELOG.md",
+		"dist",
+		"LICENSE",
+		"NOTICE",
+		"README.md"
+	],
+	"engines": {
+		"node": ">=20"
+	},
+	"sideEffects": false,
+	"publishConfig": {
+		"access": "public",
+		"provenance": true
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json --emitDeclarationOnly --declaration --outDir dist && node build.mjs",
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit -p tsconfig.json"
+	},
+	"devDependencies": {
+		"esbuild": "0.28.1",
+		"jose": "6.2.12",
+		"typescript": "7.0.2",
+		"vitest": "4.1.11"
+	}
+}
