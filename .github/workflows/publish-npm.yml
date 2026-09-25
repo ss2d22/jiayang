@@ -70,4 +70,4 @@ jobs:
       - name: publish
         run: |
           set -euo pipefail
-          npm publish --access public npm/*-npm-package.tar.gz
+          npm publish --access public ./npm/*-npm-package.tar.gz

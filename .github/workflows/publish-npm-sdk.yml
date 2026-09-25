@@ -188,7 +188,7 @@ jobs:
       # pnpm publish does not do npm's OIDC exchange. This has to be npm. A tarball runs no
       # lifecycle script, and npm applies the publishConfig packed inside it.
       - name: publish
-        run: npm publish package/*.tgz
+        run: npm publish ./package/*.tgz
 
       # A publish that quietly lost its provenance is one we would rather fail. There is no
       # documented SLA for the attestation appearing, so this waits rather than checks once.

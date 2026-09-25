@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-09-25
+
+The first version on npm. 0.1.0 was tagged but its publish failed, so it was never released. The
+code is the same as 0.1.0 below.
+
 ## 0.1.0 - 2026-09-25
 
 First release, so there is nothing to upgrade from.
