@@ -15,8 +15,8 @@ with their browser; a script sends a bearer token instead and gets the same chec
 
 The docs are at https://jiayang.cloud/docs/.
 
-This repository holds the open-source SDKs your app verifies its callers with, and the CLI's
-releases. The `jiayang` CLI is installed as a binary: by the script above, `irm
+This repository holds the open-source SDKs your app verifies its callers with, the agent plugin,
+and the CLI's releases. The `jiayang` CLI is installed as a binary: by the script above, `irm
 https://jiayang.cloud/install.ps1 | iex` in PowerShell, `brew install ss2d22/tap/jiayang`, or
 `npm install -g jiayang`. Like the platform, it is closed source.
 
@@ -104,8 +104,23 @@ any email, any role, or nobody at all.
 
 ## From an agent
 
-The CLI is also an MCP server, so the agent that wrote your app can deploy it. Any MCP client can
-run it:
+The CLI is also an MCP server, so the agent that wrote your app can deploy it. The plugin in
+[plugins/jiayang](plugins/jiayang) adds it to Claude Code, Codex or Cursor with skills for
+deploying, sharing and checking who is calling:
+
+```text
+/plugin marketplace add ss2d22/jiayang                  # Claude Code, in a session
+/plugin install jiayang-cloud@jiayang-cloud
+
+codex plugin marketplace add ss2d22/jiayang             # Codex
+codex plugin add jiayang-cloud@jiayang-cloud
+```
+
+Codex starts a plugin's server in the plugin's own folder, so run `export JIAYANG_MCP_ROOTS="$PWD"`
+in the project before starting it. In Cursor, add this repository in **Customize** with **From GitHub Repository** and install
+Jiayang Cloud.
+
+Any other MCP client can run the server on its own:
 
 ```json
 { "mcpServers": { "jiayang-cloud": { "command": "jiayang", "args": ["mcp"] } } }
@@ -147,6 +162,6 @@ These cover the basics. The full docs are at https://jiayang.cloud/docs/.
 
 ## Licence
 
-Everything in this repository is Apache-2.0. See [LICENSE](LICENSE), and each SDK's own `LICENSE`
-and `NOTICE`. The CLI binaries published on its releases are proprietary, under the terms at
+Everything in this repository is Apache-2.0. See [LICENSE](LICENSE), and the `LICENSE` and `NOTICE`
+beside each SDK and the plugin. The CLI binaries published on its releases are proprietary, under the terms at
 https://jiayang.cloud/terms.

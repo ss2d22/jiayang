@@ -1,0 +1,12 @@
+{
+	"name": "jiayang-cloud",
+	"description": "Jiayang Cloud for agents: deploy, share and watch apps from whatever built them.",
+	"owner": { "name": "Jiayang Cloud" },
+	"plugins": [
+		{
+			"name": "jiayang-cloud",
+			"source": "./plugins/jiayang",
+			"description": "Deploy the app you just built in one step, share it like a document, and see who used it."
+		}
+	]
+}

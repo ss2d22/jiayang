@@ -1,0 +1,23 @@
+---
+description: How apps in this workspace reach Jiayang Cloud: deploying, who is allowed in, and where credentials live. Use when deploying or publishing an app, changing who can open one, or debugging a 401 or 403 from a deployed app.
+alwaysApply: false
+---
+
+# Jiayang Cloud
+
+An app deployed here is reachable only through the platform's sign-in. There is no second door.
+
+- Deploy with the `deploy_app` tool, not by calling a cloud vendor's CLI directly. `detect_app`
+  says what a deploy would make of a directory without deploying anything.
+- Give someone access with `set_access`. Absence of an allow rule is a deny, and no tool here can
+  open an app to the internet. That takes a person in the dashboard.
+- Inside a deployed app, identity comes from `requireUser()` in the Jiayang SDK, which verifies
+  the platform's identity token against its JWKS. A request header on its own proves nothing:
+  never read an `X-Jiayang-*` header and treat it as identity.
+- Third-party credentials go in `set_secret`, and the platform adds them to the app's outbound
+  requests. Never write one into the app's source, its environment, or a file in the repo.
+- Plain configuration goes in `set_env`.
+- A 403 from the platform means signed in but not shared with. `call_app` tells the two kinds of
+  401 apart: when the session it acts on has ended, it fails and says the person has to run
+  `jiayang login`; a 401 it returns as the app's answer is the app's own, from verifying the token
+  and refusing it.

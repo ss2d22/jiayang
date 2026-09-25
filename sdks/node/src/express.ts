@@ -29,7 +29,7 @@ export interface WithWebhook {
 }
 
 type Request = HasHeaders & WithUser & WithWebhook;
-type Response = { status(code: number): { end(body?: string): void } };
+type Response = { setHeader(name: string, value: string): unknown; status(code: number): { end(body?: string): void } };
 type Next = (err?: unknown) => void;
 type Middleware = (req: Request, res: Response, next: Next) => void;
 
@@ -98,8 +98,11 @@ export function requireWebhook(options: WebhookMiddlewareOptions): Middleware {
 	};
 }
 
+// no-store, as the core's toResponse() says: a refusal is about this caller at this moment, and a
+// cache in front of the app mustn't hand it to the next one.
 function answer(err: unknown, res: Response, next: Next): void {
+	if (!(err instanceof Unauthorized) && !(err instanceof Forbidden)) return next(err);
+	res.setHeader("Cache-Control", "no-store");
 	if (err instanceof Unauthorized) return res.status(401).end("unauthorized");
-	if (err instanceof Forbidden) return res.status(403).end("forbidden");
-	next(err);
+	res.status(403).end("forbidden");
 }

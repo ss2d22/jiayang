@@ -109,10 +109,21 @@ describe("node-shaped headers", () => {
 
 describe("express", () => {
 	const run = (middleware: ReturnType<typeof expressRequireUser>, headers: Record<string, string | string[]>) =>
-		new Promise<{ status?: number; body?: string; user?: unknown; passed: boolean; err?: unknown }>((resolve) => {
+		new Promise<{
+			status?: number;
+			body?: string;
+			headers?: Record<string, string>;
+			user?: unknown;
+			passed: boolean;
+			err?: unknown;
+		}>((resolve) => {
 			const req = { headers } as Parameters<typeof middleware>[0];
+			const sent: Record<string, string> = {};
 			const res = {
-				status: (code: number) => ({ end: (body?: string) => resolve({ status: code, body, passed: false }) }),
+				setHeader: (name: string, value: string) => (sent[name.toLowerCase()] = value),
+				status: (code: number) => ({
+					end: (body?: string) => resolve({ status: code, body, headers: sent, passed: false }),
+				}),
 			};
 			middleware(req, res, (err?: unknown) =>
 				resolve(err ? { passed: false, err } : { user: req.user, passed: true }),
@@ -135,6 +146,17 @@ describe("express", () => {
 		expect(viewer.status).toBe(403);
 	});
 
+	// A shared cache in front of the app mustn't serve one caller's refusal to the next.
+	it("marks a 401 and a 403 no-store", async () => {
+		const none = await run(expressRequireUser({ env, ...verify }), {});
+		expect(none.headers).toEqual({ "cache-control": "no-store" });
+
+		const viewer = await run(expressRequireUser({ env, role: "editor", ...verify }), {
+			"x-jiayang-identity": await token("viewer"),
+		});
+		expect(viewer.headers).toEqual({ "cache-control": "no-store" });
+	});
+
 	// A page that renders either way still has to know when it doesn't know.
 	it("withUser lets anyone through and leaves req.user unset", async () => {
 		const out = await run(withUser({ env, ...verify }), {});
@@ -152,7 +174,10 @@ describe("express", () => {
 			new Promise<{ status?: number; webhook?: unknown; passed: boolean }>((resolve) => {
 				const middleware = expressRequireWebhook({ env, provider, ...verify });
 				const req = { headers } as Parameters<typeof middleware>[0];
-				const res = { status: (code: number) => ({ end: () => resolve({ status: code, passed: false }) }) };
+				const res = {
+					setHeader: () => undefined,
+					status: (code: number) => ({ end: () => resolve({ status: code, passed: false }) }),
+				};
 				middleware(req, res, () => resolve({ webhook: req.webhook, passed: true }));
 			});
 
@@ -173,7 +198,8 @@ describe("express", () => {
 		// sent to the webhook's path is refused there rather than let through.
 		it("works in front of app-wide requireUser", async () => {
 			type Req = Parameters<ReturnType<typeof expressRequireUser>>[0] & { path: string };
-			type Step = { path?: string; handle: (req: Req, res: { status(code: number): { end(body?: string): void } }, next: (err?: unknown) => void) => void };
+			type Res = { setHeader(name: string, value: string): unknown; status(code: number): { end(body?: string): void } };
+			type Step = { path?: string; handle: (req: Req, res: Res, next: (err?: unknown) => void) => void };
 			const chain: Step[] = [
 				{ path: "/hooks/stripe", handle: expressRequireWebhook({ env, provider: "stripe", ...verify }) },
 				{ path: "/hooks/stripe", handle: (req, res) => res.status(200).end(`took ${req.webhook?.delivery}`) },
@@ -184,7 +210,10 @@ describe("express", () => {
 			const serve = (path: string, headers: Record<string, string>) =>
 				new Promise<string>((resolve) => {
 					const req = { path, headers } as Req;
-					const res = { status: (code: number) => ({ end: (body?: string) => resolve(`${code} ${body ?? ""}`.trim()) }) };
+					const res = {
+						setHeader: () => undefined,
+						status: (code: number) => ({ end: (body?: string) => resolve(`${code} ${body ?? ""}`.trim()) }),
+					};
 					const step = (i: number): void => {
 						const at = chain.slice(i).findIndex((s) => s.path === undefined || s.path === path);
 						if (at === -1) return resolve("404");

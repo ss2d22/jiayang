@@ -120,12 +120,22 @@ connection within a minute of someone's access being taken away.
 ### Gradio
 
 ```python
+import os
+
+import gradio as gr
 from jiayang.gradio import require_user
 
 def answer(question, request: gr.Request):
     user = require_user(request)
-    ...
+    return f"{user.email} asked: {question}"
+
+gr.Interface(answer, "textbox", "textbox").launch(
+    server_name="0.0.0.0", server_port=int(os.environ.get("PORT", "7860"))
+)
 ```
+
+On the platform the app has to listen on `0.0.0.0` at the port in `PORT`. Gradio's defaults,
+`127.0.0.1` and 7860, can't be reached there.
 
 Gradio passes `None` for a handler reached through the API or a cached example. That's a caller the
 app knows nothing about, so it's refused.
@@ -238,12 +248,20 @@ What the token doesn't cover:
 at a time, and everything else stays on the loop.
 
 ```python
-from fastapi import Request
+from fastapi import HTTPException, Request
+from jiayang import Unauthorized
 from jiayang.aio import require_user
 
 @app.get("/")
 async def index(request: Request):
-    user = await require_user(request.headers)
+    try:
+        user = await require_user(request.headers)
+    except Unauthorized as err:
+        raise HTTPException(401, str(err))
+    return {"hello": user.email}
 ```
+
+Left uncaught, `Unauthorized` is a 500. In FastAPI the `CurrentUser` dependency above does this for
+you.
 
 Tests: `uv run --frozen python -m unittest discover -s tests`

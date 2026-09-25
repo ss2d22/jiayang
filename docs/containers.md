@@ -16,10 +16,10 @@ The CLI writes one for you from a template, renders it into a temporary director
 `-f`, so your project never gains a file it didn't have. `jiayang dockerfile --write` ejects it into
 the project if you'd rather own it.
 
-Every template pins its base images by digest and runs as a non-root user with `PORT=8080`. Node,
-Go and Rust build in one stage and run in another, so the compiler and what the build leaves
-behind stay out of the image; Python is a single stage. None of them take a build argument or
-mount a secret.
+Every template pins its base images by digest and runs as a non-root user with `PORT=8080`, under
+tini, so `SIGTERM` reaches the app rather than stopping at process 1. Node, Go and Rust build in one
+stage and run in another, so the compiler and what the build leaves behind stay out of the image;
+Python is a single stage. None of them take a build argument or mount a secret.
 
 | Runtime | Built with | Starts |
 |---|---|---|
