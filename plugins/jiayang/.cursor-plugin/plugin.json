@@ -1,0 +1,14 @@
+{
+	"name": "jiayang-cloud",
+	"displayName": "Jiayang Cloud",
+	"version": "0.1.0",
+	"description": "Deploy the app you just built in one step, share it like a document, and see who used it.",
+	"author": { "name": "Jiayang Cloud", "url": "https://jiayang.cloud" },
+	"homepage": "https://jiayang.cloud",
+	"repository": "https://github.com/ss2d22/jiayang",
+	"license": "Apache-2.0",
+	"keywords": ["deploy", "hosting", "sharing", "access control", "cloudflare"],
+	"category": "developer-tools",
+	"tags": ["deployment", "hosting", "access-control"],
+	"mcpServers": "./mcp.json"
+}

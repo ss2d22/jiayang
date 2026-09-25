@@ -1,0 +1,12 @@
+{
+	"name": "jiayang-cloud",
+	"interface": { "displayName": "Jiayang Cloud" },
+	"plugins": [
+		{
+			"name": "jiayang-cloud",
+			"source": { "source": "local", "path": "./plugins/jiayang" },
+			"policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+			"category": "Developer Tools"
+		}
+	]
+}

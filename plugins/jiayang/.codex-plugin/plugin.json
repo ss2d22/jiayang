@@ -1,0 +1,26 @@
+{
+	"name": "jiayang-cloud",
+	"version": "0.1.0",
+	"description": "Deploy the app you just built in one step, share it like a document, and see who used it.",
+	"author": { "name": "Jiayang Cloud", "url": "https://jiayang.cloud" },
+	"homepage": "https://jiayang.cloud",
+	"repository": "https://github.com/ss2d22/jiayang",
+	"license": "Apache-2.0",
+	"keywords": ["deploy", "hosting", "access-control", "cloudflare"],
+	"skills": "./skills",
+	"mcpServers": "./.mcp.json",
+	"interface": {
+		"displayName": "Jiayang Cloud",
+		"shortDescription": "Deploy and share the app you just built",
+		"longDescription": "Deploy an app in one step, share it like a document, and let IT see all of it. Apps stay unreachable except through the platform's sign-in.",
+		"developerName": "Jiayang Cloud",
+		"category": "Developer Tools",
+		"capabilities": ["Interactive", "Write"],
+		"websiteURL": "https://jiayang.cloud",
+		"defaultPrompt": [
+			"Deploy this directory to Jiayang Cloud and tell me the URL.",
+			"Who can open my staging app?",
+			"Give the design team access to the demo app."
+		]
+	}
+}

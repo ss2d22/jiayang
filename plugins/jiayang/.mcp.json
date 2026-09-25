@@ -1,0 +1,13 @@
+{
+	"mcpServers": {
+		"jiayang-cloud": {
+			"type": "stdio",
+			"command": "jiayang",
+			"args": ["mcp"],
+			"env": { "JIAYANG_MCP_ROOTS": "${CLAUDE_PROJECT_DIR}" },
+			"env_vars": ["JIAYANG_MCP_ROOTS"],
+			"startup_timeout_sec": 20,
+			"tool_timeout_sec": 900
+		}
+	}
+}

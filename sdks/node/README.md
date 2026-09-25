@@ -49,8 +49,9 @@ export default async function Page() {
 ```
 
 Reads the request's own headers through `next/headers`, in a server component or a route handler.
-`requireUser()` throws `Unauthorized` where a route must refuse; `getUser()` answers `null` where a
-page would rather render. Pass `headers` yourself to use it somewhere `next/headers` isn't.
+In a page, use `getUser()`: it answers `null` when there's no valid caller. `requireUser()` throws
+`Unauthorized`, which a server component turns into a 500, so keep it for route handlers and answer
+with `err.toResponse()`. Pass `headers` yourself to use it somewhere `next/headers` isn't.
 
 ### Express
 

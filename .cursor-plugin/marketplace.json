@@ -1,0 +1,14 @@
+{
+	"name": "jiayang-cloud",
+	"owner": { "name": "Jiayang Cloud" },
+	"metadata": {
+		"description": "Jiayang Cloud for agents: deploy an app in one step and say who can open it."
+	},
+	"plugins": [
+		{
+			"name": "jiayang-cloud",
+			"source": "plugins/jiayang",
+			"description": "Deploy the app you just built in one step, share it like a document, and see who used it."
+		}
+	]
+}
