@@ -78,7 +78,8 @@ def requires(least: Role, config: Config | None = None) -> Callable[[Request], C
         except Unauthorized as err:
             raise HTTPException(status_code=401, detail="unauthorized") from err
         if not has_role(user, least):
-            raise HTTPException(status_code=403, detail=str(Forbidden(least))) from None
+            # FastAPI answers an HTTPException as JSON, {"detail": ...}; the text is the other SDKs' body.
+            raise HTTPException(status_code=403, detail=Forbidden(least).body) from None
         return user
 
     return dependency

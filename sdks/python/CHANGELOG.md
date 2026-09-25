@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-09-25
+
+- A 403 says `forbidden: this needs editor` as plain text, the same body every SDK answers: Flask
+  and Django said `forbidden: editor` as HTML. FastAPI's is that text as its JSON `detail`.
+
 ## 0.1.0 - 2026-09-25
 
 First release, so there is nothing to upgrade from.

@@ -144,6 +144,8 @@ describe("express", () => {
 			"x-jiayang-identity": await token("viewer"),
 		});
 		expect(viewer.status).toBe(403);
+		// The same plain text every SDK answers.
+		expect(viewer.body).toBe("forbidden: this needs editor");
 	});
 
 	// A shared cache in front of the app mustn't serve one caller's refusal to the next.
@@ -154,7 +156,7 @@ describe("express", () => {
 		const viewer = await run(expressRequireUser({ env, role: "editor", ...verify }), {
 			"x-jiayang-identity": await token("viewer"),
 		});
-		expect(viewer.headers).toEqual({ "cache-control": "no-store" });
+		expect(viewer.headers).toEqual({ "cache-control": "no-store", "content-type": "text/plain; charset=utf-8" });
 	});
 
 	// A page that renders either way still has to know when it doesn't know.
@@ -370,8 +372,11 @@ describe("next", () => {
 });
 
 describe("what a refusal is", () => {
-	it("tells 401 and 403 apart, and both carry a response", () => {
+	it("tells 401 and 403 apart, and both carry a response", async () => {
 		expect(new Unauthorized("no").toResponse().status).toBe(401);
-		expect(new Forbidden("editor").toResponse().status).toBe(403);
+		const refused = new Forbidden("editor").toResponse();
+		expect(refused.status).toBe(403);
+		expect(await refused.text()).toBe("forbidden: this needs editor");
+		expect(refused.headers.get("content-type")).toBe("text/plain; charset=utf-8");
 	});
 });

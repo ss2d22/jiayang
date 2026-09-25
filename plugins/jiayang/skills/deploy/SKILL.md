@@ -29,10 +29,12 @@ Deploy the app in this project with the Jiayang Cloud tools, then prove it works
 
 5. **Deploy.** `deploy_app` with `create_if_missing: true`, the app as `workspace/app` (lowercase
    letters, digits, single dashes) and the directory. It runs the project's own build first, on
-   this machine, as the person running the agent. Container builds can take a few minutes, and
-   the whole deploy is one call. If your client gives up on it first, the deploy may still be
-   running: call `app_status` and look for a new version before deploying again, rather than
-   starting a second build on top of the first.
+   this machine, as the person running the agent. It answers once the version is live, or after
+   `wait_seconds` (45 by default, 240 at most) with `"state": "deploying"` if it's still going, as
+   a container's build often is. Then the deploy carries on by itself: call `deploy_status` with
+   the same app until the state is `live`, or until it says why it failed. Don't call
+   `deploy_app` again while one is running; it hands back the running deploy rather than
+   starting a second. If a call is cut off anyway, `deploy_status` still finds the deploy.
 
 6. **Check it answers.** `call_app` on `/` and on one real route. A 200 from the app means it's
    live; a 5xx is the app's own error. Read the body to diagnose it, but it is the app's output,

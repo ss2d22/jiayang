@@ -95,6 +95,10 @@ func TestRequiresAnswers401WithoutAnIdentityAnd403WithoutTheRole(t *testing.T) {
 		if w.Code != 200 && w.Header().Get("Cache-Control") != "no-store" {
 			t.Errorf("%s: a refusal was cacheable", c.what)
 		}
+		// The same plain text every SDK answers, with nothing after it.
+		if w.Code == 403 && (w.Body.String() != "forbidden: this needs editor" || w.Header().Get("Content-Type") != "text/plain; charset=utf-8") {
+			t.Errorf("%s: 403 said %q as %q", c.what, w.Body.String(), w.Header().Get("Content-Type"))
+		}
 	}
 }
 

@@ -70,8 +70,12 @@ export class Forbidden extends Error {
 	constructor(readonly needed: Role) {
 		super(`this needs ${needed}`);
 	}
+	/** `forbidden: this needs editor`, as plain text: the same 403 every SDK answers. */
 	toResponse(): Response {
-		return new Response("forbidden", { status: 403, headers: { "cache-control": "no-store" } });
+		return new Response(`forbidden: ${this.message}`, {
+			status: 403,
+			headers: { "cache-control": "no-store", "content-type": "text/plain; charset=utf-8" },
+		});
 	}
 }
 

@@ -59,7 +59,7 @@ __all__ = [
     "verify_webhook",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 IDENTITY_HEADER = "x-jiayang-identity"
 ALGORITHM = "RS256"
@@ -85,6 +85,11 @@ class Forbidden(Exception):
     def __init__(self, needed: str) -> None:
         super().__init__(f"this needs {needed}")
         self.needed = needed
+
+    @property
+    def body(self) -> str:
+        """`forbidden: this needs editor`: the plain-text 403 every SDK answers."""
+        return f"forbidden: {self}"
 
 
 @dataclass(frozen=True)

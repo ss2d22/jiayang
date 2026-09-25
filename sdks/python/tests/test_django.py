@@ -84,7 +84,10 @@ class DjangoIntegration(Base):
 
     def test_too_little_role_is_403(self):
         self.assertEqual(self.client.get("/orders", headers=headers()).status_code, 200)
-        self.assertEqual(self.client.get("/orders", headers=headers("viewer")).status_code, 403)
+        refused = self.client.get("/orders", headers=headers("viewer"))
+        self.assertEqual(refused.status_code, 403)
+        self.assertEqual(refused.content.decode(), "forbidden: this needs editor")
+        self.assertEqual(refused["Content-Type"], "text/plain; charset=utf-8")
 
     def test_a_webhook_reaches_its_view_past_the_csrf_check(self):
         client = Client(enforce_csrf_checks=True)

@@ -56,7 +56,7 @@ class FastapiIntegration(Base):
         self.assertEqual(self.client.post("/orders", headers=headers()).status_code, 200)
         answer = self.client.post("/orders", headers=headers("viewer"))
         self.assertEqual(answer.status_code, 403)
-        self.assertIn("editor", answer.json()["detail"])
+        self.assertEqual(answer.json()["detail"], "forbidden: this needs editor")
 
     def test_a_route_that_answers_either_way(self):
         self.assertEqual(self.client.get("/maybe").json(), {"hello": "stranger"})
