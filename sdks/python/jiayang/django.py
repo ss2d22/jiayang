@@ -31,7 +31,7 @@ from typing import Any, TypeVar, cast
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 
-from . import Config, Unauthorized, User, has_role
+from . import Config, Forbidden, Unauthorized, User, has_role
 from . import require_user as _require_user
 from . import require_webhook as _require_webhook
 
@@ -92,7 +92,7 @@ def role_required(least: str, *, config: Config | None = None) -> Callable[[View
             if user is None:
                 return HttpResponse("unauthorized", status=401)
             if not has_role(user, least):  # type: ignore[arg-type]
-                return HttpResponseForbidden(f"forbidden: {least}")
+                return HttpResponseForbidden(Forbidden(least).body, content_type="text/plain; charset=utf-8")
             return cast(HttpResponse, view(request, *args, **kwargs))
 
         return cast(View, wrapper)

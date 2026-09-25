@@ -67,7 +67,7 @@ def login_required(view: View | None = None, *, role: Role | None = None, config
             except Unauthorized:
                 return "unauthorized", 401
             except Forbidden as err:
-                return f"forbidden: {err.needed}", 403
+                return err.body, 403, {"Content-Type": "text/plain; charset=utf-8"}
             return view(*args, **kwargs)
 
         return cast(View, wrapper)

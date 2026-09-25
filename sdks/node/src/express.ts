@@ -104,5 +104,6 @@ function answer(err: unknown, res: Response, next: Next): void {
 	if (!(err instanceof Unauthorized) && !(err instanceof Forbidden)) return next(err);
 	res.setHeader("Cache-Control", "no-store");
 	if (err instanceof Unauthorized) return res.status(401).end("unauthorized");
-	res.status(403).end("forbidden");
+	res.setHeader("Content-Type", "text/plain; charset=utf-8");
+	res.status(403).end(`forbidden: ${err.message}`);
 }

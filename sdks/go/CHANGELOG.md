@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-09-25
+
+- `Requires` answers its 403, `forbidden: this needs editor`, with no newline after it, the same
+  body every SDK answers.
+
 ## 0.1.0 - 2026-09-25
 
 First release, so there is nothing to upgrade from.

@@ -116,9 +116,9 @@ codex plugin marketplace add ss2d22/jiayang             # Codex
 codex plugin add jiayang-cloud@jiayang-cloud
 ```
 
-Codex starts a plugin's server in the plugin's own folder, so run `export JIAYANG_MCP_ROOTS="$PWD"`
-in the project before starting it. In Cursor, add this repository in **Customize** with **From GitHub Repository** and install
-Jiayang Cloud.
+Start Codex from the project's directory: that's where a deploy through the plugin reads from. In
+Cursor, add this repository in **Customize** with **From GitHub Repository** and install Jiayang
+Cloud.
 
 Any other MCP client can run the server on its own:
 
@@ -126,16 +126,9 @@ Any other MCP client can run the server on its own:
 { "mcpServers": { "jiayang-cloud": { "command": "jiayang", "args": ["mcp"] } } }
 ```
 
-A deploy is one tool call, and it runs your project's build first; a container's or a framework's
-can take several minutes. A client that limits how long a tool call may take needs room for that.
-In Codex, `~/.codex/config.toml`:
-
-```toml
-[mcp_servers.jiayang-cloud]
-command = "jiayang"
-args = ["mcp"]
-tool_timeout_sec = 900
-```
+A deploy runs your project's build first, and a container's or a framework's can take several
+minutes. `deploy_app` answers within 45 seconds whatever happens, and a deploy still going then
+carries on while the agent waits for it with `deploy_status`, so no client needs a longer timeout.
 
 Every tool acts as whoever the CLI is signed in as, with your permissions and under your name in
 the audit log. Nothing it can do will open an app to the internet. That takes a person in the

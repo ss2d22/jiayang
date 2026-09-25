@@ -23,31 +23,48 @@ Each client looks for its own file, and they disagree about almost everything ex
 
 `skills/` is shared by all four. `rules/` is Cursor's alone.
 
-Codex's own docs call `.codex-plugin/` a compatibility fallback and prefer a portable layout. We
-meant to use the fallback: the portable format pins the server's working directory to the
-plugin's own install path and refuses unknown fields, so it can't start a server that reads the
-user's project. But Codex 0.157 takes the root `plugin.json` whenever there is one, and reads
-`.codex-plugin/plugin.json` only for the environment it adds. So a Codex install today starts the
-server in the plugin's cache, gives a tool call Codex's default five minutes rather than fifteen,
-and deploys only with `JIAYANG_MCP_ROOTS` exported in the shell Codex started from.
+Codex reads the root `plugin.json` and `mcp.json` whenever they're there, and reads
+`.codex-plugin/plugin.json` only for the variables its server file (`.mcp.json`) lists in
+`env_vars`. It takes nothing else from that file: not the timeouts, and not the working
+directory. (`agent_plugin_mcp_overlay.rs` and `agent_plugin_config.rs` in openai/codex, read
+25 Sep 2026.) So under Codex, as under any Agent Plugins client, the server starts in the plugin's
+own directory, and a tool call gets Codex's five minutes. The two sections below are how it works
+anyway.
 
 ## Where a deploy is allowed to read from
 
 `jiayang mcp` takes its roots from `JIAYANG_MCP_ROOTS`, else the roots the client offers, else the
 directory it was started in, and confines every deploy to one of them, by real path.
 
+A plugin client starts it in the plugin's own directory, which is never the project. The server
+knows that directory by `PLUGIN_ROOT` and `PLUGIN_DATA`, which the Agent Plugins spec has every
+client set, or by the manifests in it. There it goes by `PWD` instead: the directory the client
+itself was started from. With no `PWD` it deploys nothing, and says to set `JIAYANG_MCP_ROOTS`.
+Every other rule still holds for either: real paths only, never your home directory or anything
+above it, never a hidden directory.
+
 That fallback chain exists because the clients can't agree here either:
 
 - **Claude Code** expands `${CLAUDE_PROJECT_DIR}`, so `.mcp.json` sets `JIAYANG_MCP_ROOTS` outright.
-- **Codex** expands nothing that points at the project, so `.mcp.json` lists `JIAYANG_MCP_ROOTS`
-  in `env_vars` to forward a real value from the shell if there is one. With none, Codex starts
-  the server in the session's own directory and the `cwd` fallback is correct. It passes
-  `${CLAUDE_PROJECT_DIR}` through literally, which the server refuses, because a root containing
-  `${` is a placeholder a launcher failed to expand, not a directory.
+- **Codex** expands nothing that points at the project and offers no roots, so `.mcp.json` lists
+  `JIAYANG_MCP_ROOTS` and `PWD` in `env_vars`, which forwards them from Codex's own environment.
+  `PWD` is where Codex was started, which is the session's directory unless it was started with
+  `--cd`. It passes `${CLAUDE_PROJECT_DIR}` through literally, which the server refuses, because a
+  root containing `${` is a placeholder a launcher failed to expand, not a directory.
 - **Cursor** has no project-root variable available to a plugin-shipped `mcp.json` at all: a bare
   `${FOO}` there means a plugin variable filled from its dashboard. So `mcp.json` sets no
   environment, and the server uses the roots Cursor offers. Someone who wants it pinned can put
   `JIAYANG_MCP_ROOTS` in their own `.cursor/mcp.json`, where `${workspaceFolder}` does expand.
+- **Other Agent Plugins clients** read the same `mcp.json`, which can hold nothing but the
+  command: the spec refuses any field it doesn't define. They get their roots, or `PWD`.
+
+## A deploy takes as long as it takes
+
+A container's build can run past any client's limit on one call, and a plugin can't raise Codex's.
+So `deploy_app` never holds a call for longer than `wait_seconds`: 45 by default, 240 at most. A
+deploy still going then answers `"state": "deploying"` and carries on inside the server. The agent
+waits for it with `deploy_status`, which answers as `deploy_app` would have once it's done. The
+deploy skill says to. The timeouts left in `.mcp.json` are for a Codex that reads that file whole.
 
 ## Installing it
 
@@ -72,9 +89,12 @@ misses:
 { "mcpServers": { "jiayang-cloud": { "command": "jiayang", "args": ["mcp"] } } }
 ```
 
-Codex needs `tool_timeout_sec = 900` beside that, as `.mcp.json` has it: a deploy is one call.
+No client needs a longer timeout for it. A deploy that outlasts one call is followed with
+`deploy_status`.
 
 Every tool acts as whoever is signed in to the CLI. Run `jiayang login` first.
+
+It needs `jiayang` 0.1.1 or later, the first with `deploy_status`.
 
 To publish a change, bump `version` in all four manifests and push a `plugin-v*` tag here, as
 RELEASING.md says. Clients install from the public repository's default branch, and Claude Code

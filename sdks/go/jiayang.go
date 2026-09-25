@@ -755,7 +755,12 @@ func unauthorized(w http.ResponseWriter) {
 	http.Error(w, "unauthorized", http.StatusUnauthorized)
 }
 
+// forbidden answers the plain-text 403 every SDK answers, `forbidden: this needs editor`, with no
+// newline after it, which http.Error would add.
 func forbidden(w http.ResponseWriter, least Role) {
 	w.Header().Set("Cache-Control", "no-store")
-	http.Error(w, "forbidden: this needs "+string(least), http.StatusForbidden)
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusForbidden)
+	_, _ = io.WriteString(w, "forbidden: this needs "+string(least))
 }

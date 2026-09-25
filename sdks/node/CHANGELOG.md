@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 - 2026-09-25
 
 - The Express adapter's 401 and 403 carry `Cache-Control: no-store`, as `toResponse()` already did.
+- A 403 says `forbidden: this needs editor` as plain text, the same body every SDK answers, rather
+  than `forbidden`.
 
 ## 0.1.1 - 2026-09-25
 

@@ -1,6 +1,6 @@
 [project]
 name = "jiayang"
-version = "0.1.0"
+version = "0.1.1"
 description = "Verify who is calling your Jiayang Cloud app."
 readme = "README.md"
 license = "Apache-2.0"

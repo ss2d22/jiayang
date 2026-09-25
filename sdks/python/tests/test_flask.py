@@ -69,7 +69,10 @@ class FlaskIntegration(Base):
 
     def test_too_little_role_is_403(self):
         self.assertEqual(self.client.post("/orders", headers=headers()).status_code, 200)
-        self.assertEqual(self.client.post("/orders", headers=headers("viewer")).status_code, 403)
+        refused = self.client.post("/orders", headers=headers("viewer"))
+        self.assertEqual(refused.status_code, 403)
+        self.assertEqual(refused.text, "forbidden: this needs editor")
+        self.assertEqual(refused.headers["Content-Type"], "text/plain; charset=utf-8")
 
     def test_a_view_that_renders_either_way(self):
         self.assertEqual(self.client.get("/maybe").text, "hello stranger")

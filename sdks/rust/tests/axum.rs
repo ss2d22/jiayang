@@ -184,7 +184,8 @@ async fn requires_tells_a_viewer_apart_from_a_stranger() {
     let seen: Seen = Seen::default();
     let (status, body, cache) = call(app(Some(layer.clone()), seen.clone()), Some(&token("viewer"))).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
-    assert!(body.contains("editor"), "{body}");
+    // The same plain text every SDK answers.
+    assert_eq!(body, "forbidden: this needs editor");
     assert_eq!(cache.as_deref(), Some("no-store"));
     assert!(seen.lock().unwrap().is_none(), "a viewer reached the handler");
 
