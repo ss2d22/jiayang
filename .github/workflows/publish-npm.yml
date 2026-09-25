@@ -1,0 +1,73 @@
+name: publish npm cli
+
+# The npm installer for the CLI, from a published CLI release. The CLI is proprietary and built in
+# a private repository, which publishes its archives and installers as a release here; that
+# release publishing is what runs this. The package is dist's launcher: a postinstall that fetches
+# the release archive for the machine it lands on. Nothing is built here.
+#
+# There is no token here. npm trusts this repository and this file *by name* (the trusted
+# publisher recorded against the `jiayang` package on npmjs.com) and mints a token for the run in
+# exchange for GitHub's OIDC token. Renaming this file or moving it out of .github/workflows/
+# stops the exchange matching, and the publish is refused rather than falling back to anything.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: A CLI release to publish again, e.g. v0.1.0
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  publish:
+    # CLI releases only: the SDKs publish from their own tags and make no releases here.
+    if: startsWith(github.event.release.tag_name || inputs.tag, 'v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # Must match the "Environment name" on npm's trusted publisher, character for character, or
+    # the OIDC claim won't match and the exchange fails as ENEEDAUTH.
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/jiayang
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: fetch the npm package from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p npm
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*-npm-package.tar.gz' --dir npm
+          ls -la npm
+          [ "$(ls npm | wc -l)" -eq 1 ] || { echo "::error::expected exactly one npm package on $TAG"; exit 1; }
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      # npm does the OIDC exchange silently and gives up quietly, so too old an npm looks exactly
+      # like a misconfigured trusted publisher. Node 24 ships npm 11.x; check anyway.
+      - name: check npm is new enough for OIDC
+        run: |
+          set -euo pipefail
+          v=$(npm --version)
+          echo "npm $v"
+          printf '%s\n%s\n' 11.5.1 "$v" | sort -V -C ||
+            { echo "trusted publishing needs npm >= 11.5.1, this runner has $v"; exit 1; }
+
+      # Provenance comes from the same exchange, so no --provenance flag: passing one asks npm to
+      # generate provenance itself and fails the publish when it can't.
+      - name: publish
+        run: |
+          set -euo pipefail
+          npm publish --access public npm/*-npm-package.tar.gz

@@ -1,0 +1,53 @@
+[package]
+name = "jiayang"
+version = "0.1.0"
+description = "Verify who is calling your Jiayang Cloud app."
+edition.workspace = true
+rust-version.workspace = true
+license = "Apache-2.0"
+repository = "https://github.com/ss2d22/jiayang"
+homepage = "https://jiayang.cloud"
+documentation = "https://docs.rs/jiayang"
+readme = "README.md"
+keywords = ["jiayang", "identity", "jwt", "auth"]
+categories = ["authentication", "web-programming"]
+include = ["src/**", "Cargo.toml", "CHANGELOG.md", "README.md", "LICENSE", "NOTICE"]
+
+[features]
+# The extractor and the layer. Off by default: most apps want the verifier and nothing else.
+axum = ["dep:axum", "dep:tower"]
+
+# Declared here rather than inherited: the workspace's reqwest and tokio carry what the control
+# plane needs, and workspace features add to a dependency rather than replace it. Inheriting
+# them would make everyone who installs this crate build multipart uploads, a multi-threaded
+# runtime and a process manager to verify a JWT.
+[dependencies]
+base64.workspace = true
+http.workspace = true
+jsonwebtoken.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+# One GET, over TLS, following no redirects.
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+# One mutex around the key set.
+tokio = { version = "1", default-features = false, features = ["sync"] }
+
+# Not the workspace's axum: a library has no business turning on features its users then carry.
+axum = { version = "0.8", optional = true }
+tower = { workspace = true, optional = true }
+
+[dev-dependencies]
+axum = { version = "0.8" }
+rsa = { version = "0.9", features = ["sha2"] }
+# A TLS server for the fetch to talk to. Already here under reqwest, with the same provider.
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+# The tests need a runtime the library doesn't, including a multi-threaded one: the hostile suite
+# uses it to prove the key set single-flights under real concurrency.
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread", "net", "io-util"] }
+tower = { workspace = true }
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+workspace = true

@@ -1,0 +1,110 @@
+name: publish homebrew formula
+
+# The Homebrew tap, from a published CLI release. The CLI is proprietary and built in a private
+# repository, which publishes its archives, installers and formula as a release here; that
+# release publishing is what runs this. The formula points at the archives on that release.
+#
+# Setup, once: a GitHub App owned by the same account, installed on ss2d22/homebrew-tap, with
+# Contents: read and write. Its client id goes in the variable TAP_APP_CLIENT_ID and its private
+# key in the secret TAP_APP_PRIVATE_KEY, both on this repository. TAP_COMMIT_NAME and
+# TAP_COMMIT_EMAIL name the author of the commits it makes over there.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: A CLI release to publish again, e.g. v0.1.0
+        required: true
+        type: string
+
+# The token that pushes is minted below; this workflow's own token only reads the release.
+permissions: {}
+
+jobs:
+  publish:
+    # CLI releases only: the SDKs publish from their own tags and make no releases here.
+    if: startsWith(github.event.release.tag_name || inputs.tag, 'v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # Every other publisher here is OIDC, minted per run and scoped by an environment. The tap's
+    # App key is the one long-lived secret, so it gets the same gate: protection rules on this
+    # environment are what stop a workflow that isn't this one from reading it.
+    environment:
+      name: homebrew
+      url: https://github.com/${{ github.repository_owner }}/homebrew-tap
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: check the tap credential is configured
+        env:
+          CLIENT_ID: ${{ vars.TAP_APP_CLIENT_ID }}
+        run: |
+          test -n "$CLIENT_ID" ||
+            { echo "::error::TAP_APP_CLIENT_ID is not set: nothing can push to the tap"; exit 1; }
+
+      # `client-id`, not `app-id`: app-id is deprecated in v3's action.yml.
+      - name: mint a token for the tap
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.TAP_APP_CLIENT_ID }}
+          private-key: ${{ secrets.TAP_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: homebrew-tap
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: ${{ github.repository_owner }}/homebrew-tap
+          token: ${{ steps.app.outputs.token }}
+          persist-credentials: true
+
+      # Into a scratch directory, not straight into Formula/: only the formula belongs in the tap.
+      - name: fetch the formula from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACTS: ${{ runner.temp }}/artifacts
+        run: |
+          set -euo pipefail
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.rb' --dir "$ARTIFACTS"
+          ls -la "$ARTIFACTS"
+
+      - name: commit the formulae
+        env:
+          ARTIFACTS: ${{ runner.temp }}/artifacts
+          AUTHOR_NAME: ${{ vars.TAP_COMMIT_NAME }}
+          AUTHOR_EMAIL: ${{ vars.TAP_COMMIT_EMAIL }}
+          SLUG: ${{ steps.app.outputs.app-slug }}
+          INSTALL_ID: ${{ steps.app.outputs.installation-id }}
+        run: |
+          set -euo pipefail
+          # Falls back to the app's own identity, which is what GitHub attributes an app push to
+          # anyway when nothing else is set.
+          git config user.name "${AUTHOR_NAME:-${SLUG}[bot]}"
+          git config user.email "${AUTHOR_EMAIL:-${INSTALL_ID}+${SLUG}[bot]@users.noreply.github.com}"
+
+          mkdir -p Formula
+          version=${TAG#v}
+          found=0
+          for formula in "$ARTIFACTS"/*.rb; do
+            file=$(basename "$formula")
+            cp "$formula" "Formula/$file"
+
+            # Cosmetic, and never worth failing a release that is already published: the tarballs
+            # are on GitHub by the time this job runs.
+            if command -v brew >/dev/null; then
+              brew style --fix \
+                --except-cops FormulaAudit/Homepage,FormulaAudit/Desc,FormulaAuditStrict \
+                "Formula/$file" || echo "brew style had something to say; shipping it anyway"
+            fi
+
+            git add "Formula/$file"
+            git commit -q -m "${file%.rb} $version" || echo "$file is unchanged"
+            found=$((found + 1))
+          done
+          [ "$found" -gt 0 ] || { echo "::error::$TAG carries no formula"; exit 1; }
+
+          git push

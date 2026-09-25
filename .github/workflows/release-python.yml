@@ -1,0 +1,137 @@
+name: release python sdk
+
+# Publishes sdks/python to PyPI as `jiayang`. Trusted publishing only: no token lives anywhere.
+#
+# PyPI matches this file by its literal path: ss2d22/jiayang/.github/workflows/release-python.yml.
+# Renaming it, nesting it, or factoring the publish step into a reusable workflow stops publishing
+# until the publisher is reconfigured on pypi.org. PyPI rejects reusable workflows outright.
+
+on:
+  push:
+    tags:
+      - "sdk-python-v[0-9]+.[0-9]+.[0-9]+"
+      - "sdk-python-v[0-9]+.[0-9]+.[0-9]+a[0-9]+"
+      - "sdk-python-v[0-9]+.[0-9]+.[0-9]+b[0-9]+"
+      - "sdk-python-v[0-9]+.[0-9]+.[0-9]+rc[0-9]+"
+  # A rehearsal against TestPyPI. It can never reach PyPI: that job needs a tag push.
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-python-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Builds the artifacts and proves them. Holds no publishing credential, so a poisoned build
+  # dependency has nothing to steal.
+  build:
+    name: build the distributions
+    # A fork carries the tags but not the trust. Say so here, not as a PyPI error.
+    if: github.repository == 'ss2d22/jiayang'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          enable-cache: false
+
+      # A tag that disagrees with pyproject.toml publishes the wrong number under the right name,
+      # and PyPI never lets a number be reused. Read with tomllib rather than a uv subcommand:
+      # this has to be exactly what hatchling will put in the metadata.
+      - name: check the tag against the package version
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: sdks/python
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          packaged=$(python3 -c 'import tomllib;print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')
+          tagged=${TAG#sdk-python-v}
+          [ "$packaged" = "$tagged" ] ||
+            { echo "::error::$TAG says $tagged, pyproject.toml says $packaged"; exit 1; }
+
+      # --no-sources builds the way pypa/build would, ignoring tool.uv.sources. uv builds the sdist
+      # first and the wheel out of it, so a file missing from the sdist fails here rather than in
+      # someone's `pip install`.
+      #
+      # With the build backend uv.lock pins (pyproject.toml's `build` group), every package of it
+      # checked by hash. A hatchling released a minute before the tag can't build this release, and
+      # a uv.lock out of step with pyproject.toml stops it here.
+      - name: build
+        working-directory: sdks/python
+        env:
+          CONSTRAINTS: ${{ runner.temp }}/build-constraints.txt
+        run: |
+          set -euo pipefail
+          uv export --locked --only-group build --no-emit-project -o "$CONSTRAINTS"
+          uv build --no-sources --build-constraint "$CONSTRAINTS" --require-hashes
+
+      # Installed from the artifact, in an environment that has never seen this checkout: the one
+      # check that catches a package which only imports because the source tree is next to it. Its
+      # dependencies are the versions uv.lock pins, checked by hash, and smoke.sh runs the test from
+      # a directory of its own (run in the package root, Python finds the source tree before
+      # site-packages, and the test refuses to).
+      - name: smoke-test the wheel and the sdist
+        working-directory: sdks/python
+        run: bash tests/smoke.sh dist/*.whl dist/*.tar.gz
+
+      # include-hidden-files stays off: uv drops a .gitignore into dist/, and the publish step runs
+      # `twine check dist/*` over whatever arrives.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: python-dist
+          path: sdks/python/dist/
+          if-no-files-found: error
+
+  # The rehearsal. Manual only, off a branch, and it cannot reach PyPI.
+  testpypi:
+    name: rehearse on TestPyPI
+    if: github.event_name == 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/jiayang
+    permissions:
+      id-token: write # trusted publishing, and signing the attestations
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: python-dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  # The real one. `github.event_name == 'push'` is load-bearing: workflow_dispatch accepts a tag as
+  # its ref, so a ref test alone would let someone publish from the Run workflow button.
+  # No contents: read. This job never sees the source, only the dists and its own identity.
+  pypi:
+    name: publish to PyPI
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/sdk-python-v')
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/p/jiayang
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: python-dist
+          path: dist/
+      # Attestations are on by default: PEP 740 provenance signed with this workflow's identity,
+      # the same one PyPI just authenticated. v1.14.2 or newer is required: it is the first
+      # release carrying twine 7, and hatchling emits Metadata-Version 2.5, which the action's own
+      # `twine check dist/*` rejects under twine 6.
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
