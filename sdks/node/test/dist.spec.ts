@@ -15,9 +15,16 @@ import { afterAll, describe, expect, it } from "vitest";
 const dist = fileURLToPath(new URL("../dist/", import.meta.url));
 const built = existsSync(`${dist}index.mjs`);
 
+/** A child's environment with colour off, so a terminal that forces colour doesn't paint its output. */
+const plain = (() => {
+	const env = { ...process.env, NO_COLOR: "1" };
+	delete env.FORCE_COLOR;
+	return env;
+})();
+
 /** Runs a snippet in a fresh process, since this one has its own copy of everything. */
 function run(source: string, ...args: string[]): string {
-	return execFileSync(process.execPath, ["--input-type=module", "-e", source, ...args], { encoding: "utf8" }).trim();
+	return execFileSync(process.execPath, ["--input-type=module", "-e", source, ...args], { encoding: "utf8", env: plain }).trim();
 }
 
 describe.runIf(built)("the built package", () => {
@@ -117,7 +124,7 @@ describe.runIf(built)("the package installed in an app", () => {
 		const compilerOptions = { module, strict: true, noEmit: true, target: "es2022", lib: ["es2022", "dom"], types: [] };
 		writeFileSync(join(root, "tsconfig.json"), JSON.stringify({ compilerOptions, files: ["app.ts"] }));
 		try {
-			execFileSync(process.execPath, [tsc, "-p", root], { encoding: "utf8" });
+			execFileSync(process.execPath, [tsc, "-p", root], { encoding: "utf8", env: plain });
 			return "";
 		} catch (err) {
 			return String((err as { stdout?: string }).stdout ?? err);
@@ -126,12 +133,14 @@ describe.runIf(built)("the package installed in an app", () => {
 
 	// An Express or NestJS app compiled to CommonJS requires the package, and TypeScript refuses to
 	// require an entry whose only types describe an ES module (TS1479).
-	it("type-checks in a CommonJS app", () => {
+	// Each runs the TypeScript compiler three times over a whole app: about a second here, but far
+	// longer on a small CI runner busy with the other check lanes.
+	it("type-checks in a CommonJS app", { timeout: 60_000 }, () => {
 		const root = app("commonjs");
 		for (const module of ["node16", "nodenext", "commonjs"]) expect(typecheck(root, module), module).toBe("");
 	});
 
-	it("type-checks in an ES module app", () => {
+	it("type-checks in an ES module app", { timeout: 60_000 }, () => {
 		const root = app("module");
 		for (const module of ["node16", "nodenext", "esnext"]) expect(typecheck(root, module), module).toBe("");
 	});
@@ -139,7 +148,7 @@ describe.runIf(built)("the package installed in an app", () => {
 	// TypeScript before exports (moduleResolution node10, the default for `module: commonjs` until
 	// 6.0) reads `types` for the package and typesVersions for a subpath. The TypeScript here can't
 	// resolve that way any more, so check that each leads where the require condition does.
-	it("points a TypeScript that predates exports at the same types", () => {
+	it("points a TypeScript that predates exports at the same types", { timeout: 60_000 }, () => {
 		const pkg = JSON.parse(readFileSync(join(dist, "../package.json"), "utf8"));
 		expect(pkg.types).toBe(pkg.exports["."].require.types);
 		expect(pkg.main).toBe(pkg.exports["."].require.default);
@@ -152,7 +161,7 @@ describe.runIf(built)("the package installed in an app", () => {
 		}
 	});
 
-	it("loads every entry by name, from either module system", () => {
+	it("loads every entry by name, from either module system", { timeout: 60_000 }, () => {
 		const cjs = app("commonjs");
 		execFileSync(process.execPath, ["-e", `for (const e of ${JSON.stringify(ENTRIES)}) require(e)`], { cwd: cjs });
 		const esm = app("module");

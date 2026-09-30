@@ -92,6 +92,9 @@ jobs:
           for formula in "$ARTIFACTS"/*.rb; do
             file=$(basename "$formula")
             cp "$formula" "Formula/$file"
+            # The formula's licence comes from the CLI's Cargo.toml, which is proprietary, and
+            # points at this repository, which is Apache-2.0. Say which is which beside it.
+            sed -i -E 's|^([[:space:]]*)license "|\1# The jiayang CLI is proprietary, binaries only: https://jiayang.cloud/terms\n\1# The SDKs and the agent plugin in ss2d22/jiayang are Apache-2.0.\n\1license "|' "Formula/$file"
 
             # Cosmetic, and never worth failing a release that is already published: the tarballs
             # are on GitHub by the time this job runs.

@@ -11,9 +11,9 @@ that only carries `X-Jiayang-Email`.
 go get jiayang.cloud/sdk
 ```
 
-Needs Go 1.25 or newer to fetch: the module lives in a subdirectory of its repository, and 1.25 is
-where the go command learned to follow a `go-import` meta tag that says so ([Go 1.25 release
-notes]).
+Fetching it needs Go 1.25 or newer. The module lives in a subdirectory of its repository, and 1.25
+is the first go command that follows a `go-import` meta tag naming a subdirectory ([Go 1.25
+release notes]).
 
 ```go
 import jiayang "jiayang.cloud/sdk"
@@ -27,10 +27,10 @@ http.Handle("/", jiayang.Middleware(http.HandlerFunc(func(w http.ResponseWriter,
 Or call `user, err := jiayang.RequireUser(r)` in a handler. Every refusal matches
 `errors.Is(err, jiayang.ErrUnauthorized)`.
 
-`jiayang.Requires(jiayang.RoleEditor)` is the same middleware for a route only some callers may
-reach: 401 without an identity, 403 with one that isn't enough. In a handler,
+`jiayang.Requires(jiayang.RoleEditor)` is the same middleware with a minimum role. It answers 401
+without an identity and 403 when the role is too low. In a handler,
 `jiayang.RequireRole(user, jiayang.RoleEditor)` returns an error matching
-`errors.Is(err, jiayang.ErrForbidden)`, and `HasRole` asks without returning one.
+`errors.Is(err, jiayang.ErrForbidden)`, and `HasRole` checks without returning one.
 
 ## Your router
 
@@ -110,13 +110,13 @@ handed a GitHub delivery after a pattern is widened. `RequireUser` refuses a web
 the provider signs one (Stripe, Slack events, Standard Webhooks) and empty or zero otherwise. The
 body arrives as the provider sent it, so decode it however you like.
 
-What the token doesn't cover:
+Keep these limits in mind:
 
 - Signed deliveries reach your app with a webhook token, and `RequireWebhook` refuses everything
-  else. A route that skips it is open to anyone: for up to a minute after a verifier is added, for
-  good once one is removed, if the platform ever rolls its edge back, and on any path that a more
-  specific pattern with no verifier decides. A path in another case (`/Hooks/Stripe`) goes to whatever pattern
-  matches it and arrives with no token.
+  else. A route that skips it accepts anyone's request for up to a minute after a verifier is
+  added, permanently once one is removed, if the platform ever rolls its edge back, and on any
+  path that a more specific pattern with no verifier matches. A path in another case
+  (`/Hooks/Stripe`) goes to whatever pattern matches it and arrives with no token.
 - GitHub, Shopify and plain HMAC senders sign no time, so a captured delivery can be sent again at
   any time, with a different query string and any header but the signature changed. Act on what the
   signed body says, never on `X-GitHub-Event`, `X-Shopify-Topic` or another header, and make that

@@ -20,9 +20,8 @@ let verifier = jiayang::Verifier::from_env()?;
 let user = verifier.require_user(&headers).await?;
 ```
 
-`user.require_role(Role::Editor)` returns `Forbidden`, which is a different answer from
-`Unauthorized`: one is about who is calling, the other about what they may do. `has_role` asks
-without returning an error.
+`user.require_role(Role::Editor)` returns `Forbidden` when the caller's role is too low.
+`Unauthorized` means there is no valid caller. `has_role` checks without returning an error.
 
 ## axum
 
@@ -46,10 +45,10 @@ async fn index(user: User) -> String {
 }
 ```
 
-The layer verifies before the handler and answers 401 or 403 itself, putting the caller in the
-request's extensions. `User` is also an extractor for routes that aren't behind it, which is what
-the `with_state(verifier)` is for. Behind the layer it reads what the layer already found rather
-than verifying twice.
+The layer verifies before the handler, answers 401 or 403 itself, and puts the caller in the
+request's extensions. `User` is also an extractor for routes outside the layer, which is why the
+router has `with_state(verifier)`. Behind the layer, the extractor reads what the layer found
+instead of verifying again.
 
 ## Webhooks
 
@@ -98,13 +97,13 @@ person's. `Provider::from_name("stripe")` reads a name from your own config.
 seconds, each where the provider signs one (Stripe, Slack events, Standard Webhooks) and `None`
 otherwise.
 
-What the token doesn't cover:
+Keep these limits in mind:
 
 - Signed deliveries reach your app with a webhook token, and `require_webhook` refuses everything
-  else. A route that skips it is open to anyone: for up to a minute after a verifier is added, for
-  good once one is removed, if the platform ever rolls its edge back, and on any path that a more
-  specific pattern with no verifier decides. A path in another case (`/Hooks/Stripe`) goes to whatever pattern
-  matches it and arrives with no token.
+  else. A route that skips it accepts anyone's request for up to a minute after a verifier is
+  added, permanently once one is removed, if the platform ever rolls its edge back, and on any
+  path that a more specific pattern with no verifier matches. A path in another case
+  (`/Hooks/Stripe`) goes to whatever pattern matches it and arrives with no token.
 - GitHub, Shopify and plain HMAC senders sign no time, so a captured delivery can be sent again at
   any time, with a different query string and any header but the signature changed. Act on what the
   signed body says, never on `X-GitHub-Event`, `X-Shopify-Topic` or another header, and make that
@@ -115,8 +114,8 @@ What the token doesn't cover:
 
 ## Configuration
 
-The platform sets all three variables for your app. Without them, `from_env` fails and nothing
-verifies. Every request is refused while the keys can't be fetched.
+The platform sets all three variables for your app. Without them, `from_env` fails. While the keys
+can't be fetched, every request is refused.
 
 The keys are fetched over TLS, trusting the public roots and, on top of them, the certificates in
 the file `SSL_CERT_FILE` names. A container's outbound TLS on the platform goes through a proxy

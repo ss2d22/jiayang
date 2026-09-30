@@ -1,18 +1,20 @@
 # The Jiayang Cloud plugin
 
-One plugin, one MCP server, four clients. Everything here launches the same thing:
+The plugin gives four agent clients one MCP server. Every client starts it with the same
+command:
 
 ```
 jiayang mcp
 ```
 
-The server is the CLI itself, so a customer installs one binary and every client runs the same
-command. No Node, no bundled server file, no plugin-root path to interpolate, and the server's
-version is the CLI's version by construction.
+The server is the CLI, so a customer installs one binary and nothing else. The plugin ships no
+server file and needs neither Node nor a plugin-root path, and the server's version is always the
+CLI's version.
 
-## Why there are four manifests
+## Manifests
 
-Each client looks for its own file, and they disagree about almost everything except the command.
+Each client reads its own manifest and expects a different layout. Only the command is the same in
+all four.
 
 | File | Read by | Server definition it uses |
 |---|---|---|
@@ -25,48 +27,49 @@ Each client looks for its own file, and they disagree about almost everything ex
 
 Codex reads the root `plugin.json` and `mcp.json` whenever they're there, and reads
 `.codex-plugin/plugin.json` only for the variables its server file (`.mcp.json`) lists in
-`env_vars`. It takes nothing else from that file: not the timeouts, and not the working
+`env_vars`. It takes nothing else from that file, including the timeouts and the working
 directory. (`agent_plugin_mcp_overlay.rs` and `agent_plugin_config.rs` in openai/codex, read
 25 Sep 2026.) So under Codex, as under any Agent Plugins client, the server starts in the plugin's
-own directory, and a tool call gets Codex's five minutes. The two sections below are how it works
-anyway.
+own directory, and a tool call gets Codex's five minutes. The next two sections describe how the
+server handles both.
 
-## Where a deploy is allowed to read from
+## Where a deploy may read from
 
 `jiayang mcp` takes its roots from `JIAYANG_MCP_ROOTS`, else the roots the client offers, else the
-directory it was started in, and confines every deploy to one of them, by real path.
+directory it was started in, and confines every deploy to one of them, compared by real path.
 
 A plugin client starts it in the plugin's own directory, which is never the project. The server
-knows that directory by `PLUGIN_ROOT` and `PLUGIN_DATA`, which the Agent Plugins spec has every
-client set, or by the manifests in it. There it goes by `PWD` instead: the directory the client
-itself was started from. With no `PWD` it deploys nothing, and says to set `JIAYANG_MCP_ROOTS`.
-Every other rule still holds for either: real paths only, never your home directory or anything
-above it, never a hidden directory.
+recognises that directory by `PLUGIN_ROOT` and `PLUGIN_DATA`, which the Agent Plugins spec has
+every client set, or by the manifests in it. When started there, it uses `PWD` instead, the
+directory the client itself was started from. With no `PWD` it deploys nothing and says to set
+`JIAYANG_MCP_ROOTS`. The other rules apply either way: paths are compared as real paths, and a
+root can't be your home directory, anything above it, or a hidden directory.
 
-That fallback chain exists because the clients can't agree here either:
+Each client reaches a different step in that order:
 
 - **Claude Code** expands `${CLAUDE_PROJECT_DIR}`, so `.mcp.json` sets `JIAYANG_MCP_ROOTS` outright.
 - **Codex** expands nothing that points at the project and offers no roots, so `.mcp.json` lists
   `JIAYANG_MCP_ROOTS` and `PWD` in `env_vars`, which forwards them from Codex's own environment.
   `PWD` is where Codex was started, which is the session's directory unless it was started with
-  `--cd`. It passes `${CLAUDE_PROJECT_DIR}` through literally, which the server refuses, because a
-  root containing `${` is a placeholder a launcher failed to expand, not a directory.
-- **Cursor** has no project-root variable available to a plugin-shipped `mcp.json` at all: a bare
-  `${FOO}` there means a plugin variable filled from its dashboard. So `mcp.json` sets no
+  `--cd`. Codex passes `${CLAUDE_PROJECT_DIR}` through unexpanded, and the server refuses any root
+  containing `${`, since that is a placeholder a launcher failed to expand.
+- **Cursor** gives a plugin-shipped `mcp.json` no project-root variable. A bare `${FOO}` there
+  means a plugin variable filled in from Cursor's dashboard. So `mcp.json` sets no
   environment, and the server uses the roots Cursor offers. Someone who wants it pinned can put
   `JIAYANG_MCP_ROOTS` in their own `.cursor/mcp.json`, where `${workspaceFolder}` does expand.
-- **Other Agent Plugins clients** read the same `mcp.json`, which can hold nothing but the
-  command: the spec refuses any field it doesn't define. They get their roots, or `PWD`.
+- **Other Agent Plugins clients** read the same `mcp.json`, which holds only the command, because
+  the spec refuses any field it doesn't define. They use the roots they offer, or `PWD`.
 
-## A deploy takes as long as it takes
+## Long deploys
 
-A container's build can run past any client's limit on one call, and a plugin can't raise Codex's.
-So `deploy_app` never holds a call for longer than `wait_seconds`: 45 by default, 240 at most. A
-deploy still going then answers `"state": "deploying"` and carries on inside the server. The agent
-waits for it with `deploy_status`, which answers as `deploy_app` would have once it's done. The
-deploy skill says to. The timeouts left in `.mcp.json` are for a Codex that reads that file whole.
+A container's build can take longer than a client allows for one tool call, and a plugin can't
+raise Codex's limit. So `deploy_app` holds a call for at most `wait_seconds` (45 by default, 240
+at most). If the deploy is still going, it answers `"state": "deploying"` and the deploy carries on
+inside the server. The agent then waits with `deploy_status`, which answers as `deploy_app` would
+have once the deploy is done; the deploy skill tells it to. The timeouts in `.mcp.json` are for a
+Codex version that reads that whole file.
 
-## Installing it
+## Install
 
 The plugin is Apache-2.0 and published with the SDKs in `ss2d22/jiayang`. Each client reads its
 own marketplace file at that repository's root, and all three list the plugin as `jiayang-cloud`
@@ -79,17 +82,16 @@ in a marketplace also called `jiayang-cloud`.
 - **Cursor**: in **Customize**, add `https://github.com/ss2d22/jiayang` with **From GitHub
   Repository** and install Jiayang Cloud. Reads `.cursor-plugin/marketplace.json`.
 
-Every name, the entry's and each manifest's, has to be the same: Codex refuses an install whose
-manifest name differs from the entry's, and `scripts/mirror.test.mjs` checks it.
+The marketplace entry and every manifest must use the same name. Codex refuses an install whose
+manifest name differs from the entry's, and `scripts/mirror.test.mjs` checks this.
 
-A client that takes no plugins can run the server on its own. The skills are the only thing it
-misses:
+A client without plugin support can run the server directly. It gets every tool but no skills:
 
 ```json
 { "mcpServers": { "jiayang-cloud": { "command": "jiayang", "args": ["mcp"] } } }
 ```
 
-No client needs a longer timeout for it. A deploy that outlasts one call is followed with
+No client needs a longer timeout. A deploy that outlasts one call is followed with
 `deploy_status`.
 
 Every tool acts as whoever is signed in to the CLI. Run `jiayang login` first.

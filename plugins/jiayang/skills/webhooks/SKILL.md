@@ -5,22 +5,20 @@ description: Let a third party (Stripe, GitHub, Slack, Shopify, a Standard Webho
 
 # Webhooks
 
-Apps are unreachable except through the platform's sign-in. A webhook sender can't sign in, so one
-path has to be opened to the internet, and only that path. The platform checks the sender's
-signature on that path before the app sees anything, so the app never holds the provider's signing
-secret.
+Apps are reachable only through the platform's sign-in. A webhook sender can't sign in, so one
+path is opened to the internet, and no other. The platform checks the sender's signature on that
+path before the app sees the request, so the app never holds the provider's signing secret.
 
-**You can't open the path or set up its verifier.** Both take a person signed in to the dashboard.
-That is on purpose: an agent that can open an app, or change what a stranger's request needs to get
-in, is an agent that can be talked into it. Your job is to get the app right and tell the person
-exactly what to do.
+You can't open the path or set up its verifier. Both need a person signed in to the dashboard, so
+that an agent can't be talked into opening an app to strangers. Build the endpoint, then tell the
+person exactly what to do.
 
-1. **Build the endpoint.** One path doing one thing: `/hooks/stripe`, not `/api/*`. Deliveries
-   arrive as POST.
+1. **Build the endpoint.** Use one path for one sender, such as `/hooks/stripe`, not `/api/*`.
+   Deliveries arrive as POST.
 
-2. **Check the platform's token, not the provider's signature.** Once the person has added a
-   verifier, the platform checks each delivery's signature and sends it on unchanged, with an
-   `X-Jiayang-Identity` token of kind `webhook`. In the handler:
+2. **Check the platform's token.** Don't check the provider's signature yourself. Once the person
+   has added a verifier, the platform checks each delivery's signature and sends it on unchanged,
+   with an `X-Jiayang-Identity` token of kind `webhook`. In the handler:
 
    ```js
    import { requireWebhook, Unauthorized } from "@jiayang-cloud/sdk";
@@ -52,11 +50,11 @@ exactly what to do.
    changed. Act on what the signed body says, never on `X-GitHub-Event`, `X-Shopify-Topic` or
    another header, and make handling a delivery twice safe.
 
-4. **The app holds no signing secret.** Don't read one from the environment, don't put one in
+4. **Keep signing secrets out of the app.** Don't read one from the environment, don't put one in
    `set_env` or `set_secret`, and never ask the person to paste one to you. `set_env` refuses a
    `whsec_` value or a name like `STRIPE_WEBHOOK_SECRET`, and its refusal says where it goes.
 
-5. **Deploy, then ask the person to open and verify the path in one step.** Tell them: in the
+5. **Deploy, then ask the person to open and verify the path.** Tell them: in the
    dashboard, the app's Sharing tab, Public paths, enter `/hooks/stripe`, choose Stripe under
    "Who sends to it?", press Open it, and paste the signing secret from Stripe (Workbench, Webhooks,
    your endpoint, Reveal secret). The dialog shows the address to give Stripe, which is

@@ -18,6 +18,7 @@ clap = { version = "4", features = ["derive", "env"] }
 crossterm = "0.29"
 hex = "0.4"
 hmac = "0.12"
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 futures-util = { version = "0.3", default-features = false }
 http = "1"
 jsonwebtoken = "9"
@@ -63,6 +64,12 @@ strip = "none"
 [profile.dist]
 inherits = "release"
 lto = "thin"
+
+# Line numbers for panics and backtraces, and none of the rest of the debug info, which is most of
+# what the tests' links write and what CI caches. For a debugger that shows variables, build with
+# CARGO_PROFILE_DEV_DEBUG=true.
+[profile.dev]
+debug = "line-tables-only"
 
 # RSA key generation in test fixtures is painfully slow unoptimized.
 [profile.dev.package.num-bigint-dig]

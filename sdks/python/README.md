@@ -23,19 +23,19 @@ def index():
     return f"hello {user.email}"
 ```
 
-Headers in any shape: a mapping, Django's `request.META`, anything with `.get`.
+It accepts headers in any shape: a mapping, Django's `request.META`, or anything with `.get`.
 
 The platform sets `JIAYANG_APP_ID`, `JIAYANG_IDENTITY_ISSUER` and `JIAYANG_JWKS_URL`. If any is
 missing, or the keys can't be fetched, every request is refused.
 
 `user.kind` is `"user"` (with `email`) or `"service"` for a bypass token (`email` is `None`).
 `user.role` is the caller's access to this app: `viewer`, `editor` or `owner`, in that order.
-`require_role(user, "editor")` raises `Forbidden`; `has_role` asks without raising.
+`require_role(user, "editor")` raises `Forbidden`; `has_role` checks without raising.
 
 ## Your framework
 
-Each of these only needs its own framework. Install `jiayang[flask]`, `jiayang[fastapi]`,
-`jiayang[django]`, `jiayang[streamlit]` or `jiayang[gradio]` to say so.
+Each integration depends only on its own framework. Install it with `jiayang[flask]`,
+`jiayang[fastapi]`, `jiayang[django]`, `jiayang[streamlit]` or `jiayang[gradio]`.
 
 ### Flask
 
@@ -53,8 +53,8 @@ def place_order():
     ...
 ```
 
-No identity is 401, too little role is 403, and neither reaches the view. `get_user()` returns the
-caller or `None`, for a page that would rather render than refuse.
+A request with no identity gets 401 and one with too low a role gets 403, before the view runs.
+`get_user()` returns the caller or `None`, for a page that should render for anyone.
 
 ### FastAPI
 
@@ -74,8 +74,8 @@ async def place_order(user: Annotated[User, Depends(requires("editor"))]):
     ...
 ```
 
-`optional_user` is the dependency that answers `None` instead of refusing. These verify
-asynchronously, as `jiayang.aio` below does.
+`optional_user` is a dependency that gives `None` instead of refusing. These dependencies verify
+asynchronously, like `jiayang.aio` below.
 
 ### Django
 
@@ -96,9 +96,9 @@ def place_order(request):
     ...
 ```
 
-The middleware sets `request.jiayang_user` to the caller or `None`, and refuses nothing by itself,
-so an app can have a public page and a private one. `login_required` and `role_required` are what
-refuse: 401 without an identity, 403 with too little role. Import them from `jiayang.django`:
+The middleware sets `request.jiayang_user` to the caller or `None` and refuses nothing itself, so
+an app can have both public and private pages. `login_required` and `role_required` do the
+refusing: 401 without an identity, 403 with too low a role. Import them from `jiayang.django`;
 Django's own `login_required` checks Django's sessions and redirects to `LOGIN_URL`.
 
 ### Streamlit
@@ -112,10 +112,10 @@ if user is None:
     st.stop()
 ```
 
-Verified once per session and remembered. Streamlit only sees the headers of the request that
-opened the session, and an identity token is good for sixty seconds, so checking again on the next
-rerun would refuse a caller who never left. Nothing is lost by remembering: the edge closes the
-connection within a minute of someone's access being taken away.
+The caller is verified once per session and remembered. Streamlit only sees the headers of the
+request that opened the session, and an identity token lasts sixty seconds, so checking again on a
+later rerun would refuse a caller who is still there. Remembering is safe because the edge closes
+the connection within a minute of someone's access being removed.
 
 ### Gradio
 
@@ -137,8 +137,8 @@ gr.Interface(answer, "textbox", "textbox").launch(
 On the platform the app has to listen on `0.0.0.0` at the port in `PORT`. Gradio's defaults,
 `127.0.0.1` and 7860, can't be reached there.
 
-Gradio passes `None` for a handler reached through the API or a cached example. That's a caller the
-app knows nothing about, so it's refused.
+Gradio passes `None` as the request for a handler reached through the API or a cached example.
+`require_user` refuses it, since there's no caller to verify.
 
 ## Webhooks
 
@@ -173,8 +173,8 @@ signed id for it and `signed_at` the signed time in unix seconds, each where the
 (Stripe, Slack events, Standard Webhooks) and `None` otherwise. `jiayang.aio` has both as
 coroutines.
 
-The body arrives as the provider sent it, and nothing needs its raw bytes any more, so read it
-however the framework does.
+The body arrives as the provider sent it, and your app doesn't need the raw bytes, so read it the
+way the framework usually does.
 
 Each framework checks per route, so a webhook's route and a person's can sit side by side:
 
@@ -189,8 +189,8 @@ def stripe_hook():
     ...
 ```
 
-With Flask-WTF's `CSRFProtect`, exempt the route: a provider has no CSRF token to send, and the
-platform's token is what lets the delivery in.
+With Flask-WTF's `CSRFProtect`, exempt the route. A provider has no CSRF token to send, and the
+platform's token is what authenticates the delivery.
 
 ```python
 @app.post("/hooks/stripe")
@@ -224,15 +224,15 @@ def stripe_hook(request):
 ```
 
 `JiayangMiddleware` refuses nothing by itself, so it can stay installed for the whole project.
-`webhook_required` exempts its view from Django's CSRF check for the same reason as above.
+`webhook_required` exempts its view from Django's CSRF check, for the same reason.
 
-What the token doesn't cover:
+Keep these limits in mind:
 
 - Signed deliveries reach your app with a webhook token, and `require_webhook` refuses everything
-  else. A route that skips it is open to anyone: for up to a minute after a verifier is added, for
-  good once one is removed, if the platform ever rolls its edge back, and on any path that a more
-  specific pattern with no verifier decides. A path in another case (`/Hooks/Stripe`) goes to whatever pattern
-  matches it and arrives with no token.
+  else. A route that skips it accepts anyone's request for up to a minute after a verifier is
+  added, permanently once one is removed, if the platform ever rolls its edge back, and on any
+  path that a more specific pattern with no verifier matches. A path in another case
+  (`/Hooks/Stripe`) goes to whatever pattern matches it and arrives with no token.
 - GitHub, Shopify and plain HMAC senders sign no time, so a captured delivery can be sent again at
   any time, with a different query string and any header but the signature changed. Act on what the
   signed body says, never on `X-GitHub-Event`, `X-Shopify-Topic` or another header, and make that
@@ -261,7 +261,7 @@ async def index(request: Request):
     return {"hello": user.email}
 ```
 
-Left uncaught, `Unauthorized` is a 500. In FastAPI the `CurrentUser` dependency above does this for
-you.
+Left uncaught, `Unauthorized` becomes a 500. In FastAPI the `CurrentUser` dependency above handles
+this for you.
 
 Tests: `uv run --frozen python -m unittest discover -s tests`

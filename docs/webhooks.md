@@ -8,7 +8,7 @@ delivery's signature before your app sees it, with a secret your app never holds
 ## Setting one up
 
 Only a person signed in to the dashboard can open a path or change its verifier. A CLI token or an
-agent can't, on purpose.
+agent can't, so an agent can't be talked into opening your app to strangers.
 
 1. In the dashboard, open the app's **Sharing** tab and find **Public paths**.
 2. Enter the path, choose who sends to it, and press **Open it**.

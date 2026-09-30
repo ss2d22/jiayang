@@ -29,9 +29,9 @@ export default {
 
 It runs anywhere with WebCrypto and `fetch`: Workers, Node 20+, Deno and Bun.
 
-`requireRole(user, "editor")` throws `Forbidden`, which is a different answer from `Unauthorized`:
-one is about who is calling, the other about what they may do. `hasRole` asks without throwing.
-Both refusals have `.toResponse()`.
+`requireRole(user, "editor")` throws `Forbidden` (403) when the caller's role is too low.
+`Unauthorized` (401) means there is no valid caller. `hasRole` checks the role without throwing.
+Both errors have `.toResponse()`.
 
 ## Your framework
 
@@ -75,8 +75,8 @@ app.use("*", jiayang());
 app.get("/", (c) => c.text(`hello ${getUser(c).email}`));
 ```
 
-`getUser(c)` throws if the middleware didn't run on that route: a handler asking who is calling
-should never be reached without an answer. The platform's variables come from Hono's bindings on
+`getUser(c)` throws if the middleware didn't run on that route, so a handler never runs without a
+verified caller. The platform's variables come from Hono's bindings on
 Workers and from `process.env` on Node, Bun and Deno, so the same line works in a container.
 
 ### node:http, Koa, anything else
@@ -87,8 +87,8 @@ import { envFromProcess, requireUserFrom } from "@jiayang-cloud/sdk/node";
 const user = await requireUserFrom(req, envFromProcess());
 ```
 
-Takes Node-style headers. A token that arrived twice is refused rather than one of them being
-picked: the edge sends exactly one, so two means something else put one there.
+It takes Node-style headers. A request carrying the token twice is refused. The edge sends exactly
+one, so a second came from somewhere else.
 
 ## Webhooks
 
@@ -129,7 +129,7 @@ came in on, such as `/hooks/stripe` or `/hooks/*`. `delivery` is the provider's 
 `signedAt` the signed time in unix seconds, each where the provider signs one (Stripe, Slack events,
 Standard Webhooks) and `null` otherwise.
 
-The body arrives as the provider sent it, and nothing needs its raw bytes any more:
+The body arrives as the provider sent it, and your app doesn't need the raw bytes, so
 `express.json()` or `await request.json()` is fine.
 
 Mount a webhook's route so app-wide user checks never see it:
@@ -176,13 +176,13 @@ export async function POST(request: Request) {
 With Node's own headers, `requireWebhookFrom(req, envFromProcess(), { provider: "github" })` from
 `/node`, which refuses a token that arrived twice.
 
-What the token doesn't cover:
+Keep these limits in mind:
 
 - Signed deliveries reach your app with a webhook token, and `requireWebhook` refuses everything
-  else. A route that skips it is open to anyone: for up to a minute after a verifier is added, for
-  good once one is removed, if the platform ever rolls its edge back, and on any path that a more
-  specific pattern with no verifier decides. A path in another case (`/Hooks/Stripe`) goes to whatever pattern
-  matches it and arrives with no token.
+  else. A route that skips it accepts anyone's request for up to a minute after a verifier is
+  added, permanently once one is removed, if the platform ever rolls its edge back, and on any
+  path that a more specific pattern with no verifier matches. A path in another case
+  (`/Hooks/Stripe`) goes to whatever pattern matches it and arrives with no token.
 - GitHub, Shopify and plain HMAC senders sign no time, so a captured delivery can be sent again at
   any time, with a different query string and any header but the signature changed. Act on what the
   signed body says, never on `X-GitHub-Event`, `X-Shopify-Topic` or another header, and make that

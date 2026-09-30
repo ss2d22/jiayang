@@ -97,6 +97,8 @@ Precedence, highest first: a flag, then `jiayang.json`, then your wrangler confi
   `npm ci`, `pnpm install --frozen-lockfile`, `yarn install --immutable`, `bun install
   --frozen-lockfile` (from `bun.lock` or `bun.lockb`). With no lockfile nothing is installed:
   versions are never resolved at deploy time, and the build runs with whatever is there already.
+  `jiayang detect` says so on its `install:` line, and when packages are missing it tells you to
+  run `npm install` (or your package manager's) first.
 - `--no-build` skips install and build and deploys what is already there.
 - `--dry-run` says what the directory is and how it would be deployed (what `jiayang detect`
   says) and stops. It builds nothing, uploads nothing and doesn't create the app.
@@ -143,8 +145,9 @@ Hyperdrive, browser rendering, mTLS certificates, email, Workflows, containers a
 refused. So are `routes`, `triggers`, `crons` and anything else that would put your Worker
 somewhere other than the platform's edge. That is the one property the whole product rests on.
 
-Compatibility flags are an allowlist: `nodejs_compat`, `nodejs_compat_v2`, `nodejs_als` and
-`global_fetch_strictly_public`. Anything else is refused before the build rather than at upload.
+Compatibility flags are an allowlist: `nodejs_compat`, `nodejs_compat_v2`, `nodejs_als`,
+`global_fetch_strictly_public` and `no_nodejs_compat_v2`, which Nitro writes into the config it
+generates for Cloudflare. Anything else is refused before the build rather than at upload.
 
 ## Limits
 

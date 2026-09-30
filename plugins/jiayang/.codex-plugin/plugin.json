@@ -1,7 +1,7 @@
 {
 	"name": "jiayang-cloud",
-	"version": "0.1.1",
-	"description": "Deploy the app you just built in one step, share it like a document, and see who used it.",
+	"version": "0.1.2",
+	"description": "Deploy the app you built in one step, share it like a document, and see who used it.",
 	"author": { "name": "Jiayang Cloud", "url": "https://jiayang.cloud" },
 	"homepage": "https://jiayang.cloud",
 	"repository": "https://github.com/ss2d22/jiayang",
@@ -11,7 +11,7 @@
 	"mcpServers": "./.mcp.json",
 	"interface": {
 		"displayName": "Jiayang Cloud",
-		"shortDescription": "Deploy and share the app you just built",
+		"shortDescription": "Deploy and share the app you built",
 		"longDescription": "Deploy an app in one step, share it like a document, and let IT see all of it. Apps stay unreachable except through the platform's sign-in.",
 		"developerName": "Jiayang Cloud",
 		"category": "Developer Tools",

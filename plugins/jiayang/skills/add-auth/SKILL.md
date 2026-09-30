@@ -3,19 +3,17 @@ name: add-auth
 description: Make an app on Jiayang Cloud identify its caller properly, by verifying the identity token with the SDK. Use when an app needs to know who is using it, show a name, or allow some people more than others.
 ---
 
-# Know who is calling
+# Identify the caller
 
-Every request that reaches an app on this platform has already been through the platform's
-sign-in. The edge signs a 60-second token naming the caller and sends it as `X-Jiayang-Identity`.
-The app's job is to verify it.
+Every request that reaches an app on this platform has already passed the platform's sign-in. The
+edge signs a 60-second token naming the caller and sends it as `X-Jiayang-Identity`. The app
+verifies that token with the SDK.
 
-**The header alone proves nothing.** `X-Jiayang-Email` is for display. An app that trusts it
-trusts whoever can reach it. Verify the token; the SDK does the rest. The platform sends no role
-header: the role is in the verified token. (`jiayang dev` also sends `X-Jiayang-Role`, for display
-there only, so never read it.)
+Don't trust a header on its own. `X-Jiayang-Email` is for display, and an app that trusts it
+trusts anyone who can reach it. The platform sends no role header; the role is in the verified
+token. (`jiayang dev` also sends `X-Jiayang-Role`, for display there only. Never read it.)
 
-Install the SDK for the language. These are the only names it's published under, so don't guess
-another:
+Install the SDK for the language. It is published only under these names:
 
 | Language | Install | Import |
 |---|---|---|
@@ -24,10 +22,10 @@ another:
 | Go (1.25 or newer) | `go get jiayang.cloud/sdk` | `import jiayang "jiayang.cloud/sdk"` |
 | Rust | `cargo add jiayang`, with `--features axum` for the extractor and layer | `jiayang` |
 
-The Go module is `jiayang.cloud/sdk`, not a GitHub path: fetching it by where its source lives
-fails with a module path mismatch.
+The Go module is `jiayang.cloud/sdk`. Fetching it by its GitHub path fails with a module path
+mismatch.
 
-Then:
+Then verify the caller:
 
 ```js
 // Workers, or anything with fetch
@@ -48,7 +46,7 @@ import { requireUser } from "@jiayang-cloud/sdk/express";
 app.use(requireUser());                             // 401 before the handler
 ```
 
-Python has a module per framework, and each one works the way its framework does:
+Python has a module per framework, each following that framework's conventions:
 
 ```python
 # Flask: a refused request never reaches the view
@@ -116,9 +114,8 @@ let verifier = jiayang::Verifier::from_env()?;             // once, at startup
 let user = verifier.require_user(&headers).await?;         // or the `axum` feature's layer
 ```
 
-What the SDK gives back: the caller's email (absent for a machine), their kind (`user` or
-`service`), their role (`viewer`, `editor` or `owner`) and their workspace's id. Each language
-spells them its own way:
+The SDK returns the caller's email (absent for a machine), their kind (`user` or `service`), their
+role (`viewer`, `editor` or `owner`) and their workspace's id. The field names in each language:
 
 | | Email | Kind | Role | Workspace |
 |---|---|---|---|---|
@@ -129,16 +126,16 @@ spells them its own way:
 
 A webhook's delivery carries a token too, of kind `webhook`, and `requireUser` refuses it. Its route
 checks it with `requireWebhook()` from the same SDK and has to be mounted where an app-wide user
-check never sees it: in Express, before `app.use(requireUser())`. The webhooks skill has the rest.
+check never sees it: in Express, before `app.use(requireUser())`. The webhooks skill covers the
+rest.
 
-Two different refusals, and they mean different things: **401** is "I don't know who you are",
-**403** is "I know, and you may not do this". Answer with the right one.
+Answer 401 when the caller isn't identified, and 403 when they are identified but not allowed.
 
 The platform sets `JIAYANG_APP_ID`, `JIAYANG_IDENTITY_ISSUER` and `JIAYANG_JWKS_URL` for the app.
-If any is missing, or the keys can't be fetched, every request is refused. That is deliberate.
+If any is missing, or the keys can't be fetched, the SDK refuses every request.
 
-Locally, `jiayang dev -- <your start command>` puts the same front door in front of the app on
-your machine, signing real tokens with a key made for that run, so the same code path runs. There
-is no development mode in the SDKs and no way to skip a signature.
+Locally, `jiayang dev -- <your start command>` runs the same front door on your machine and signs
+real tokens with a key made for that run, so the app runs the same code as in production. The
+SDKs have no development mode and can't skip a signature.
 
-Afterwards, `call_app` as yourself and check the app says who you are.
+When you're done, `call_app` as yourself and check the app says who you are.

@@ -1,6 +1,6 @@
 # Jiayang Cloud
 
-Deploy the app you just built in one step, share it like a document, and see who used it.
+Deploy an app in one step, share it by email, and see who used it.
 
 ```sh
 curl -fsSL https://jiayang.cloud/install.sh | sh
@@ -11,7 +11,7 @@ jiayang share acme/hello someone@example.com
 ```
 
 Your app is live at its own address, reachable only by the people you shared it with. They sign in
-with their browser; a script sends a bearer token instead and gets the same checks.
+with their browser. A script sends a bypass token instead and gets the same checks.
 
 The docs are at https://jiayang.cloud/docs/.
 
@@ -49,8 +49,9 @@ signing in through whenever that isn't `https://api.jiayang.cloud`.
 
 ## Knowing who is calling
 
-Every request that reaches your app has already been through the platform's sign-in, and arrives
-with a 60-second signed token saying who the caller is. Your app verifies it:
+Every request that reaches your app, except on a public path, has been through the platform's
+sign-in and carries a signed token, valid for 60 seconds, saying who the caller is. Your app
+verifies it with the SDK:
 
 ```js
 import { requireUser } from "@jiayang-cloud/sdk";
@@ -71,10 +72,10 @@ let user = verifier.require_user(&headers).await?;
 
 A webhook can't sign in, so its path is opened in the dashboard with the provider that signs it.
 The platform checks each delivery's signature and sends it with a token of kind `webhook`, which
-`requireWebhook()` checks: see [docs/webhooks.md](docs/webhooks.md).
+`requireWebhook()` checks. See [docs/webhooks.md](docs/webhooks.md).
 
-`X-Jiayang-Email` and `X-Jiayang-Role` are for display. The presence of a header proves nothing:
-verify the token, which is all any of these do for you.
+The edge also sends `X-Jiayang-Email`, for display only. A header on its own proves nothing, so
+always verify the token. That is what each SDK does.
 
 | SDK | Install | Docs | Source |
 |---|---|---|---|
@@ -85,9 +86,9 @@ verify the token, which is all any of these do for you.
 
 ## Running it locally
 
-`jiayang dev` puts the platform's front door in front of your app on your machine, signing real
-tokens with a key made for that run. The SDKs have no development mode and never skip a signature,
-so this is how you test the code that matters.
+`jiayang dev` runs a copy of the edge in front of your app on your machine, signing real tokens
+with a key made for that run. The SDKs have no development mode and always check the signature,
+so use `jiayang dev` to test your auth code.
 
 ```sh
 jiayang dev                      # works out how to start your app
@@ -99,8 +100,8 @@ starts the way its image would, here: `npm start`, uvicorn, `flask run`, `manage
 `go run` or `cargo run`. A Dockerfile says how to build an app rather than how to run it on your
 machine, so for one of those, say it yourself.
 
-Your app is at http://127.0.0.1:8787, and http://127.0.0.1:8787/.jiayang switches who you are:
-any email, any role, or nobody at all.
+Your app is at http://127.0.0.1:8787. Open http://127.0.0.1:8787/.jiayang to change who you are
+signed in as: any email, any role, or signed out.
 
 ## From an agent
 
@@ -116,7 +117,7 @@ codex plugin marketplace add ss2d22/jiayang             # Codex
 codex plugin add jiayang-cloud@jiayang-cloud
 ```
 
-Start Codex from the project's directory: that's where a deploy through the plugin reads from. In
+Start Codex from the project's directory, because a deploy through the plugin reads from there. In
 Cursor, add this repository in **Customize** with **From GitHub Repository** and install Jiayang
 Cloud.
 
@@ -127,12 +128,12 @@ Any other MCP client can run the server on its own:
 ```
 
 A deploy runs your project's build first, and a container's or a framework's can take several
-minutes. `deploy_app` answers within 45 seconds whatever happens, and a deploy still going then
-carries on while the agent waits for it with `deploy_status`, so no client needs a longer timeout.
+minutes. `deploy_app` answers within 45 seconds. A deploy still running then carries on, and the agent
+waits for it with `deploy_status`, so no client needs a longer timeout.
 
 Every tool acts as whoever the CLI is signed in as, with your permissions and under your name in
-the audit log. Nothing it can do will open an app to the internet. That takes a person in the
-dashboard.
+the audit log. No tool can open a path to the internet or change a webhook verifier; a person does
+that in the dashboard.
 
 ## What deploys
 
@@ -151,10 +152,15 @@ dashboard.
 - [docs/containers.md](docs/containers.md): servers, with or without a Dockerfile
 - [docs/webhooks.md](docs/webhooks.md): receiving webhooks, with the platform checking each signature
 
-These cover the basics. The full docs are at https://jiayang.cloud/docs/.
+The full docs are at https://jiayang.cloud/docs/.
 
 ## Licence
 
-Everything in this repository is Apache-2.0. See [LICENSE](LICENSE), and the `LICENSE` and `NOTICE`
-beside each SDK and the plugin. The CLI binaries published on its releases are proprietary, under the terms at
-https://jiayang.cloud/terms.
+Two licences apply here:
+
+- **The SDKs and the agent plugin are Apache-2.0.** That's everything in this repository, source
+  and all. See [LICENSE](LICENSE), and the `LICENSE` and `NOTICE` beside each SDK and the plugin.
+- **The `jiayang` CLI is proprietary.** Its source isn't here: it's built elsewhere and published
+  on this repository's releases as binaries only, under the terms at https://jiayang.cloud/terms.
+  That's why the Homebrew formula and the npm package that install it say proprietary while this
+  repository says Apache-2.0.

@@ -6,7 +6,7 @@
 		{
 			"name": "jiayang-cloud",
 			"source": "./plugins/jiayang",
-			"description": "Deploy the app you just built in one step, share it like a document, and see who used it."
+			"description": "Deploy the app you built in one step, share it like a document, and see who used it."
 		}
 	]
 }
