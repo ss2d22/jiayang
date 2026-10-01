@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3 - 2026-10-01
+
+- The README is rewritten in plain words. Nothing in the SDK's behaviour changed.
+
 ## 0.1.2 - 2026-09-25
 
 - The Express adapter's 401 and 403 carry `Cache-Control: no-store`, as `toResponse()` already did.

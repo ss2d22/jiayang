@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 - 2026-10-01
+
+- The README is rewritten in plain words. Nothing in the SDK's behaviour changed.
+
 ## 0.1.0 - 2026-09-25
 
 First release, so there is nothing to upgrade from.

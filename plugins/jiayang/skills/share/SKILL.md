@@ -26,7 +26,7 @@ the person to put where it's needed. Give them the path, not the contents, and t
 secret is sent as `Authorization: Bearer <secret>` to the machine URL from `app_url`.
 `revoke_bypass_token` ends it immediately.
 
-Before telling the user it's done, call `app_status` and read back who has access. Report what the
-platform has, not what you asked for.
+Before telling the user it's done, call `app_status` and read back who has access. Report what
+Jiayang Cloud has, not what you asked for.
 
 Confirm the email is the one they meant. If you're unsure of an address, ask.

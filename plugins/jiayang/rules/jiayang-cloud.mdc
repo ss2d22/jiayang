@@ -5,22 +5,21 @@ alwaysApply: false
 
 # Jiayang Cloud
 
-An app deployed here is reachable only through the platform's sign-in. There is no second door.
+An app deployed here can only be reached through Jiayang Cloud's sign-in. There is no other way in.
 
 - Deploy with the `deploy_app` tool, not by calling a cloud vendor's CLI directly. `detect_app`
-  says what a deploy would make of a directory without deploying anything.
-- Give someone access with `set_access`. Absence of an allow rule is a deny, and no tool here can
-  open an app to the internet. That takes a person in the dashboard.
+  shows what a deploy would do with a directory without deploying anything.
+- Give someone access with `set_access`. Anyone not given access is refused, and no tool here can
+  open an app to the internet. Only a person in the dashboard can do that.
 - Inside a deployed app, identity comes from `requireUser()` in the Jiayang SDK, which verifies
-  the platform's identity token against its JWKS. A request header on its own proves nothing:
-  never read an `X-Jiayang-*` header and treat it as identity.
-- Third-party credentials go in `set_secret`, and the platform adds them to the app's outbound
+  Jiayang Cloud's identity token against its JWKS. A request header on its own proves nothing.
+  Never read an `X-Jiayang-*` header and treat it as identity.
+- Third-party credentials go in `set_secret`, and Jiayang Cloud adds them to the app's outbound
   requests. Never write one into the app's source, its environment, or a file in the repo.
 - Plain configuration goes in `set_env`.
-- The platform answers an app that isn't shared with the caller with the same 404 as an app that
-  isn't there, and `call_app` says which it was when it can. A 403 from the platform means the
-  workspace is suspended, or a bypass token went to another app. `call_app` tells the two kinds of
-  401 apart: when the session it acts on has ended, it fails and says the person has to run
-  `jiayang login`; a 401 it returns as the app's answer is the app's own, from verifying the token
-  and refusing it. Likewise a 404 for an app that isn't there, or that you can't open, fails;
-  a 404 it returns is the app's own.
+- Jiayang Cloud answers an app that isn't shared with the caller with the same 404 as an app that
+  doesn't exist. `call_app` says which it was when it can.
+- A 403 from Jiayang Cloud means the workspace is suspended, or a bypass token went to another app.
+- `call_app` fails when the session it acts on has ended, and says the person has to run
+  `jiayang login`. It also fails for an app that doesn't exist or that you can't open. A 401 or
+  404 it returns as an answer came from the app itself.

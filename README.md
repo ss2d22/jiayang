@@ -38,14 +38,15 @@ Netskope and the like) it works wherever your browser does. If the proxy's CA is
 store, point `JIAYANG_CA_FILE` at it, in PEM. The CLI uses `SSL_CERT_FILE` when that isn't set, and
 trusts either on top of the system's.
 
-The CLI takes its environment as your own settings, the way git, gh and the AWS CLI do.
-`JIAYANG_API`, `JIAYANG_APPS_URL`, `JIAYANG_CONFIG_DIR`, `XDG_CONFIG_HOME`, `HTTP_PROXY`,
-`HTTPS_PROXY`, `ALL_PROXY`, `NO_PROXY`, `JIAYANG_CA_FILE` and `SSL_CERT_FILE` decide where it
-connects, what it trusts and where your session is kept, so set them only to values you chose. That
-includes what a tool like direnv loads from a project's `.envrc`. The CLI never reads a `.env` file
-itself, never sends a token to another machine over plain http, never sends traffic for this
-machine (localhost and loopback addresses) through a proxy, and `jiayang login` says which API it's
-signing in through whenever that isn't `https://api.jiayang.cloud`.
+The CLI trusts its environment the way git, gh and the AWS CLI do. `JIAYANG_API`,
+`JIAYANG_APPS_URL`, `JIAYANG_CONFIG_DIR`, `XDG_CONFIG_HOME`, `HTTP_PROXY`, `HTTPS_PROXY`,
+`ALL_PROXY`, `NO_PROXY`, `JIAYANG_CA_FILE` and `SSL_CERT_FILE` control where it connects, what it
+trusts and where it keeps your session. Only set them to values you chose, and that includes
+anything a tool like direnv loads from a project's `.envrc`.
+
+The CLI never reads a `.env` file. It never sends a token to another machine over plain http, and
+never sends localhost or loopback traffic through a proxy. If you sign in to any API other than
+`https://api.jiayang.cloud`, `jiayang login` tells you which one.
 
 ## Knowing who is calling
 

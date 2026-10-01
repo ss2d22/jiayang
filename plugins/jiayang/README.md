@@ -63,10 +63,10 @@ Each client reaches a different step in that order:
 ## Long deploys
 
 A container's build can take longer than a client allows for one tool call, and a plugin can't
-raise Codex's limit. So `deploy_app` holds a call for at most `wait_seconds` (45 by default, 240
-at most). If the deploy is still going, it answers `"state": "deploying"` and the deploy carries on
+raise Codex's limit. So `deploy_app` holds a call for at most `wait_seconds`, which defaults to 45
+and goes up to 240. If the deploy is still going, it answers `"state": "deploying"` and the deploy carries on
 inside the server. The agent then waits with `deploy_status`, which answers as `deploy_app` would
-have once the deploy is done; the deploy skill tells it to. The timeouts in `.mcp.json` are for a
+have once the deploy is done. The deploy skill tells it to. The timeouts in `.mcp.json` are for a
 Codex version that reads that whole file.
 
 ## Install

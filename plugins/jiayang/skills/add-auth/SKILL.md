@@ -5,13 +5,13 @@ description: Make an app on Jiayang Cloud identify its caller properly, by verif
 
 # Identify the caller
 
-Every request that reaches an app on this platform has already passed the platform's sign-in. The
+Every request that reaches an app on Jiayang Cloud has already passed its sign-in. The
 edge signs a 60-second token naming the caller and sends it as `X-Jiayang-Identity`. The app
 verifies that token with the SDK.
 
 Don't trust a header on its own. `X-Jiayang-Email` is for display, and an app that trusts it
-trusts anyone who can reach it. The platform sends no role header; the role is in the verified
-token. (`jiayang dev` also sends `X-Jiayang-Role`, for display there only. Never read it.)
+trusts anyone who can reach it. Jiayang Cloud sends no role header. The role is in the verified
+token. `jiayang dev` also sends `X-Jiayang-Role` for display. Never read it.
 
 Install the SDK for the language. It is published only under these names:
 
@@ -131,11 +131,11 @@ rest.
 
 Answer 401 when the caller isn't identified, and 403 when they are identified but not allowed.
 
-The platform sets `JIAYANG_APP_ID`, `JIAYANG_IDENTITY_ISSUER` and `JIAYANG_JWKS_URL` for the app.
+Jiayang Cloud sets `JIAYANG_APP_ID`, `JIAYANG_IDENTITY_ISSUER` and `JIAYANG_JWKS_URL` for the app.
 If any is missing, or the keys can't be fetched, the SDK refuses every request.
 
-Locally, `jiayang dev -- <your start command>` runs the same front door on your machine and signs
-real tokens with a key made for that run, so the app runs the same code as in production. The
+Locally, `jiayang dev -- <your start command>` runs the same sign-in edge on your machine and signs
+real tokens with a key made for that session, so the app runs the same code as in production. The
 SDKs have no development mode and can't skip a signature.
 
 When you're done, `call_app` as yourself and check the app says who you are.

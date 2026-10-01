@@ -59,7 +59,7 @@ __all__ = [
     "verify_webhook",
 ]
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 IDENTITY_HEADER = "x-jiayang-identity"
 ALGORITHM = "RS256"
