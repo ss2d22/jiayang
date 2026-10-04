@@ -131,6 +131,8 @@ The platform sets `JIAYANG_APP_ID`, `JIAYANG_IDENTITY_ISSUER` and `JIAYANG_JWKS_
 missing, or the keys can't be fetched, every request is refused.
 
 `user.Kind` is `"user"` (with `Email`) or `"service"` for a bypass token (`Email` is empty).
+A scheduled job is `"service"` too, with a `user.Sub` that starts with `"scheduler:"`. Check both
+before doing the job: anyone the app is shared with can call the same path.
 `user.Role` is the caller's access to this app.
 
 `User` and `Webhook` marshal to JSON with the names the Python and Rust SDKs use (`workspace_id`,

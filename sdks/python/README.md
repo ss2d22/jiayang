@@ -29,6 +29,8 @@ The platform sets `JIAYANG_APP_ID`, `JIAYANG_IDENTITY_ISSUER` and `JIAYANG_JWKS_
 missing, or the keys can't be fetched, every request is refused.
 
 `user.kind` is `"user"` (with `email`) or `"service"` for a bypass token (`email` is `None`).
+A scheduled job is `"service"` too, with a `user.sub` that starts with `"scheduler:"`. Check both
+before doing the job: anyone the app is shared with can call the same path.
 `user.role` is the caller's access to this app: `viewer`, `editor` or `owner`, in that order.
 `require_role(user, "editor")` raises `Forbidden`; `has_role` checks without raising.
 

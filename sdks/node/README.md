@@ -199,6 +199,8 @@ which the `/express`, `/next` and `/hono` entries read for you, and `envFromProc
 reads for anything else. If any is missing, or the keys can't be fetched, every request is refused.
 
 `user.kind` is `"user"` (with `email`) or `"service"` for a bypass token (`email` is `null`).
+A scheduled job is `"service"` too, with a `user.sub` that starts with `"scheduler:"`. Check both
+before doing the job: anyone the app is shared with can call the same path.
 `user.role` is the caller's access to this app.
 
 Tests: `pnpm test`

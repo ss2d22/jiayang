@@ -48,6 +48,10 @@ The CLI never reads a `.env` file. It never sends a token to another machine ove
 never sends localhost or loopback traffic through a proxy. If you sign in to any API other than
 `https://api.jiayang.cloud`, `jiayang login` tells you which one.
 
+Yun, our cloud, turns up at a few moments when you're at a terminal. `JIAYANG_NO_MASCOT=1` turns
+Yun off. Yun never shows with `--json`, `NO_COLOR` or `CI` set, or when the output goes to a pipe
+or a file.
+
 ## Knowing who is calling
 
 Every request that reaches your app, except on a public path, has been through the platform's

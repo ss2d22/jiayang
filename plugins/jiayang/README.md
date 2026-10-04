@@ -79,8 +79,11 @@ in a marketplace also called `jiayang-cloud`.
   `/plugin install jiayang-cloud@jiayang-cloud`. Reads `.claude-plugin/marketplace.json`.
 - **Codex**: `codex plugin marketplace add ss2d22/jiayang`, then
   `codex plugin add jiayang-cloud@jiayang-cloud`. Reads `.agents/plugins/marketplace.json`.
-- **Cursor**: in **Customize**, add `https://github.com/ss2d22/jiayang` with **From GitHub
-  Repository** and install Jiayang Cloud. Reads `.cursor-plugin/marketplace.json`.
+- **Cursor**: installs plugins from the Cursor Marketplace, where this one isn't listed yet, and
+  from team marketplaces: on a Teams or Enterprise plan an admin imports
+  `https://github.com/ss2d22/jiayang` under **Dashboard**, **Plugins & MCPs**, **Add Marketplace**,
+  which reads `.cursor-plugin/marketplace.json`. Everyone else runs `jiayang mcp install cursor` in
+  the project, which writes `.cursor/mcp.json` with the CLI's full path.
 
 The marketplace entry and every manifest must use the same name. Codex refuses an install whose
 manifest name differs from the entry's, and `scripts/mirror.test.mjs` checks this.

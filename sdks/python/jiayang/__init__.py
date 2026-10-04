@@ -97,7 +97,7 @@ class User:
     kind: str
     """ "user" for a person, "service" for a bypass token."""
     sub: str
-    """Stable id. The person's platform id ("usr_…"), or "service:<token id>"."""
+    """Stable id. The person's platform id ("usr_…"), "service:<token id>", or "scheduler:<schedule id>"."""
     email: str | None
     """None for service tokens."""
     role: str

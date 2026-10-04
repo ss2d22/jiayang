@@ -15,7 +15,14 @@ Roles, each including the one before it:
 
 To share with one person, call `set_access` with the app, their email and a role.
 `role: "none"` removes their access. Either change takes effect within 60 seconds, including on
-open connections, so a revoked person's WebSocket is closed.
+open connections, so a revoked person's WebSocket is closed. If the app is still shared with them
+another way (their domain, a group, or the whole workspace), the answer names it in
+`still_shared_by`: tell the user they can still get in, and how to shut them out.
+
+No tool here shares with everyone at a domain or with a group. For that, give the person the
+command to run themselves: `jiayang share <workspace>/<app> @acme.com` for everyone whose address
+is exactly at acme.com, or `jiayang share <workspace>/<app> --group <name>` for one of the
+workspace's groups. Both let people in as viewers only.
 
 To share with a whole workspace, call `set_visibility` with `workspace`. Every member becomes a
 viewer. `private` undoes it.

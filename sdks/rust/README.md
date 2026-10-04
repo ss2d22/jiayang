@@ -112,6 +112,18 @@ Keep these limits in mind:
   with a 2xx. Answer with anything else and a copy can get through within the provider's tolerance,
   so dedupe on `delivery` there as well.
 
+## Scheduled jobs
+
+A [scheduled job](https://jiayang.cloud/docs/apps/schedules/) arrives as `kind` `"service"`, with a
+`sub` that starts with `"scheduler:"`. Check both before doing the job: anyone the app is shared
+with can call the same path.
+
+```rust
+if user.kind != jiayang::Kind::Service || !user.sub.starts_with("scheduler:") {
+    return StatusCode::FORBIDDEN.into_response();
+}
+```
+
 ## Configuration
 
 The platform sets all three variables for your app. Without them, `from_env` fails. While the keys

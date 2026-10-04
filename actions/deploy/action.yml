@@ -1,0 +1,155 @@
+# Deploys a directory to an app on Jiayang Cloud from a GitHub Actions job, with no secret stored
+# in the repository. The job asks GitHub for an OIDC token whose audience is the API, trades it
+# for a deploy credential that lasts 15 minutes and deploys this one app, and runs
+# `jiayang deploy` with it.
+#
+# The job needs `permissions: id-token: write`, and an owner of the app has to name this
+# repository first, in the dashboard under the app's Deploy tab, GitHub Actions.
+# https://jiayang.cloud/docs/deploy/github-actions
+
+name: Deploy to Jiayang Cloud
+description: Deploy a directory to an app on Jiayang Cloud with the run's own GitHub OIDC token. No stored secret.
+author: Jiayang Cloud
+branding:
+  icon: upload-cloud
+  color: gray-dark
+
+inputs:
+  app:
+    description: The app, as workspace/app. It has to exist already.
+    required: true
+  directory:
+    description: The directory to deploy, from the root of the checkout.
+    required: false
+    default: "."
+  api:
+    description: The Jiayang Cloud API. Also the OIDC token's audience.
+    required: false
+    default: https://api.jiayang.cloud
+  cli-version:
+    description: Which version of the jiayang CLI to install from npm, exactly. 0.1.8 or later.
+    required: false
+    default: "0.1.8"
+  args:
+    description: More flags for jiayang deploy, such as --no-build or --kind static.
+    required: false
+    default: ""
+
+outputs:
+  url:
+    description: Where the app is served.
+    value: ${{ steps.deploy.outputs.url }}
+  version:
+    description: The version number that went live.
+    value: ${{ steps.deploy.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    # Before the OIDC token is asked for, and with no way to ask for one: nothing installed here can
+    # mint a token for our API. One exact version, which npm never lets change once published, and
+    # no install scripts; the CLI's own binary comes down the first time it runs. The unset covers
+    # this step only; the deploy step takes the variables away for itself.
+    - name: Install the jiayang CLI
+      shell: bash
+      env:
+        CLI_VERSION: ${{ inputs.cli-version }}
+      run: |
+        set -euo pipefail
+        unset ACTIONS_ID_TOKEN_REQUEST_TOKEN ACTIONS_ID_TOKEN_REQUEST_URL
+        if ! [[ "$CLI_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "::error::cli-version is one version, like 0.1.8, not $CLI_VERSION"
+          exit 1
+        fi
+        npm install --global --ignore-scripts --no-fund --no-audit "jiayang@$CLI_VERSION"
+        jiayang --version
+
+    # The trade and the deploy are one step, so the credential is never left on disk between two:
+    # a job cancelled, or a step skipped, after the trade can't leave a live one in RUNNER_TEMP.
+    # The step trades with the OIDC request variables, then starts again without them before
+    # anything of the project's runs.
+    - name: Deploy
+      id: deploy
+      shell: bash
+      working-directory: ${{ inputs.directory }}
+      env:
+        JIAYANG_API: ${{ inputs.api }}
+        APP: ${{ inputs.app }}
+        ARGS: ${{ inputs.args }}
+      run: |
+        set -euo pipefail
+        if [ "${JIAYANG_ACTION_STAGE:-}" != "deploy" ]; then
+          if [ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ] || [ -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]; then
+            echo "::error::This job can't ask GitHub for an OIDC token. Add 'permissions: id-token: write' to the job."
+            exit 1
+          fi
+          if ! [[ "$APP" =~ ^([a-z0-9-]+)/([a-z0-9-]+)$ ]]; then
+            echo "::error::app is workspace/app, like acme/site, not $APP"
+            exit 1
+          fi
+          workspace=${BASH_REMATCH[1]}
+          name=${BASH_REMATCH[2]}
+          if ! [[ "$JIAYANG_API" =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?$ ]]; then
+            echo "::error::api is an https origin, like https://api.jiayang.cloud"
+            exit 1
+          fi
+          if [ ! -f "$0" ]; then
+            echo "::error::The deploy step couldn't start again without the OIDC request variables."
+            exit 1
+          fi
+          audience=$(jq -rn --arg v "$JIAYANG_API" '$v | @uri')
+          # Tokens go to curl and jq on stdin or in their environment, never on a command line,
+          # which anything else in the job can read with ps. Neither call waits on a hung server.
+          oidc=$(curl --fail --silent --show-error --max-time 30 --proto '=https' -H @- \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$audience" \
+            <<<"Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" | jq -r '.value')
+          if [ -z "$oidc" ] || [ "$oidc" = "null" ]; then
+            echo "::error::GitHub gave this job no OIDC token."
+            exit 1
+          fi
+          echo "::add-mask::$oidc"
+          answer=$(OIDC="$oidc" jq -n '{token: env.OIDC}' | curl --silent --show-error --max-time 30 --proto '=https' \
+            -X POST -H 'content-type: application/json' --data-binary @- \
+            -w '\n%{http_code}' "$JIAYANG_API/v1/workspaces/$workspace/apps/$name/github/token")
+          unset oidc
+          status=${answer##*$'\n'}
+          body=${answer%$'\n'*}
+          if [ "$status" != "200" ]; then
+            message=$(jq -r '.message // empty' <<<"$body" 2>/dev/null || true)
+            echo "::error::${message:-Jiayang Cloud refused the token ($status).}"
+            exit 1
+          fi
+          credential=$(jq -r '.token' <<<"$body")
+          if [ -z "$credential" ] || [ "$credential" = "null" ]; then
+            echo "::error::Jiayang Cloud answered with no credential."
+            exit 1
+          fi
+          echo "::add-mask::$credential"
+          # In a file only this user can read, not an environment variable: anything running as
+          # the same user can read a process's environment from /proc. The CLI reads it and
+          # deletes it before it starts anything, and so does this step when it ends, however. The
+          # shell the exec starts sets a trap of its own for that; this one only removes the file if
+          # the exec fails.
+          umask 077
+          file=$(mktemp "${RUNNER_TEMP:-/tmp}/jiayang-deploy.XXXXXX")
+          trap 'rm -f "$file"' EXIT
+          printf '%s' "$credential" > "$file"
+          unset credential answer body
+          # The build runs the project's own scripts and dependencies, which have no business
+          # asking GitHub for another token. `unset` would leave them in what /proc shows of this
+          # shell, so it starts again without them and no process after this has them. The CLI
+          # withholds them from the build too.
+          exec env -u ACTIONS_ID_TOKEN_REQUEST_TOKEN -u ACTIONS_ID_TOKEN_REQUEST_URL \
+            JIAYANG_ACTION_STAGE=deploy JIAYANG_DEPLOY_TOKEN_FILE="$file" bash --noprofile --norc -eo pipefail "$0"
+        fi
+        trap 'rm -f "$JIAYANG_DEPLOY_TOKEN_FILE"' EXIT
+        if [ -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]; then
+          echo "::error::The deploy step started again with the OIDC request variables still set."
+          exit 1
+        fi
+        read -r -a extra <<<"$ARGS"
+        # The +form keeps an empty list from tripping set -u on a bash older than 4.4.
+        live=$(jiayang deploy "$APP" . --json ${extra[@]+"${extra[@]}"})
+        echo "$live"
+        echo "url=$(jq -r '.url' <<<"$live")" >> "$GITHUB_OUTPUT"
+        echo "version=$(jq -r '.number' <<<"$live")" >> "$GITHUB_OUTPUT"

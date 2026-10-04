@@ -17,11 +17,16 @@ base64 = "0.22"
 clap = { version = "4", features = ["derive", "env"] }
 crossterm = "0.29"
 hex = "0.4"
+hkdf = "0.12"
 hmac = "0.12"
 flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
 futures-util = { version = "0.3", default-features = false }
 http = "1"
 jsonwebtoken = "9"
+# Mozilla's public suffix list, compiled in: what a domain grant refuses to share with, and what a
+# custom domain can never be. Pinned, so
+# the list is what was reviewed; bump it now and then to take in suffixes added since.
+psl = "=2.1.238"
 rand = "0.9"
 rmcp = { version = "3", features = ["server", "macros", "transport-io"] }
 schemars = "1"

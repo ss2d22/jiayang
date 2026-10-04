@@ -68,7 +68,8 @@ func refuse(why string) error { return fmt.Errorf("%w: %s", ErrUnauthorized, why
 type User struct {
 	// Kind is "user" for a person, "service" for a bypass token.
 	Kind string `json:"kind"`
-	// Sub is a stable id, either the person's platform id ("usr_…") or "service:<token id>".
+	// Sub is a stable id: the person's platform id ("usr_…"), "service:<token id>", or
+	// "scheduler:<schedule id>" for a scheduled job.
 	Sub string `json:"sub"`
 	// Email is empty for service tokens.
 	Email string `json:"email"`

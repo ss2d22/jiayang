@@ -63,7 +63,8 @@ pub enum Kind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct User {
     pub kind: Kind,
-    /// Stable id, either the person's platform id (`usr_…`) or `service:<token id>`.
+    /// Stable id: the person's platform id (`usr_…`), `service:<token id>`, or
+    /// `scheduler:<schedule id>` for a scheduled job.
     pub sub: String,
     /// `None` for service tokens.
     pub email: Option<String>,

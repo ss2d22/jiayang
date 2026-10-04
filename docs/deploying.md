@@ -130,8 +130,9 @@ from `env` with a pointer to `secret`.
 
 ## What a Worker may ask for
 
-The platform hands out one binding: a D1 database named `DB`. A wrangler config asking for
-anything else is refused before the build, by name, with what to do instead:
+The platform hands out a D1 database named `DB` and, where it has storage on, the app's own
+files, an R2 bucket named `FILES`. Storage isn't switched on for jiayang.cloud yet. A wrangler
+config asking for anything else is refused before the build, by name, with what to do instead:
 
 ```
 wrangler.jsonc asks for things this platform doesn't hand out:
@@ -140,7 +141,7 @@ wrangler.jsonc asks for things this platform doesn't hand out:
   kv_namespaces (CACHE): the platform doesn't hand out KV
 ```
 
-KV, R2, queues, service bindings, Durable Objects, dispatch namespaces, Workers AI, Vectorize,
+KV, other R2 buckets, queues, service bindings, Durable Objects, dispatch namespaces, Workers AI, Vectorize,
 Hyperdrive, browser rendering, mTLS certificates, email, Workflows, containers and `unsafe` are all
 refused. So are `routes`, `triggers`, `crons` and anything else that would put your Worker
 somewhere other than the platform's edge. That is the one property the whole product rests on.

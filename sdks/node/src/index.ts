@@ -47,7 +47,7 @@ const RANK: Record<string, number> = { viewer: 1, editor: 2, owner: 3 };
 
 export interface User {
 	kind: "user" | "service";
-	/** Stable id. The person's platform id ("usr_…"), or "service:<token id>". */
+	/** Stable id. The person's platform id ("usr_…"), "service:<token id>", or "scheduler:<schedule id>". */
 	sub: string;
 	/** Null for service tokens. */
 	email: string | null;

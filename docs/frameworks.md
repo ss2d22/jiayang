@@ -80,8 +80,8 @@ project can be a single `src/index.ts` and nothing else.
 
 The config is read for the entry, the compatibility date and flags, and the assets directory.
 Bindings are subject to the policy in [deploying.md](deploying.md#what-a-worker-may-ask-for): a D1
-database named `DB` is handed out, `vars` are refused with the `jiayang env set` lines printed, and
-everything else is refused by name.
+database named `DB` and an R2 bucket named `FILES` are handed out, `vars` are refused with the
+`jiayang env set` lines printed, and everything else is refused by name.
 
 Builds run with `CLOUDFLARE_*` and `CF_*` stripped from the environment, so a stray account token
 in your shell can't reach wrangler and a build can't touch your own Cloudflare account.

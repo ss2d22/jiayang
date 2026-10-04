@@ -9,6 +9,8 @@ An app deployed here can only be reached through Jiayang Cloud's sign-in. There 
 
 - Deploy with the `deploy_app` tool, not by calling a cloud vendor's CLI directly. `detect_app`
   shows what a deploy would do with a directory without deploying anything.
+- To make an app from nothing, start from a template: `list_templates`, then
+  `create_from_template`, then `deploy_app`.
 - Give someone access with `set_access`. Anyone not given access is refused, and no tool here can
   open an app to the internet. Only a person in the dashboard can do that.
 - Inside a deployed app, identity comes from `requireUser()` in the Jiayang SDK, which verifies
