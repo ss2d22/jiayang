@@ -66,25 +66,39 @@ func refuse(why string) error { return fmt.Errorf("%w: %s", ErrUnauthorized, why
 // User is a verified caller. As JSON it's kind, sub, email, role and workspace_id, the names Python
 // and Rust use, with a null email for a bypass token.
 type User struct {
-	// Kind is "user" for a person, "service" for a bypass token.
+	// Kind is "user" for a person, "service" for a bypass token, a workspace's agent or a
+	// scheduled job.
 	Kind string `json:"kind"`
-	// Sub is a stable id: the person's platform id ("usr_…"), "service:<token id>", or
-	// "scheduler:<schedule id>" for a scheduled job.
+	// Sub is a stable id: the person's platform id ("usr_…"), "service:<token id>",
+	// "agent:<agent id>" for a workspace's agent, or "scheduler:<schedule id>" for a scheduled job.
 	Sub string `json:"sub"`
-	// Email is empty for service tokens.
+	// Email is empty for service tokens and agents.
 	Email string `json:"email"`
 	// Role is the caller's access to this app.
 	Role        string `json:"role"`
 	WorkspaceID string `json:"workspace_id"`
+	// AgentName is the agent's name, as the workspace calls it, when an agent called. Empty for
+	// everyone else.
+	AgentName string `json:"agent_name"`
 }
 
-// MarshalJSON writes an empty Email as null, as Python writes None.
+// IsAgent reports whether a workspace's agent made the request, rather than a person, a bypass
+// token or a scheduled job.
+func (u User) IsAgent() bool {
+	return u.AgentName != ""
+}
+
+// agentPrefix starts an agent's Sub, and its id follows.
+const agentPrefix = "agent:"
+
+// MarshalJSON writes an empty Email or AgentName as null, as Python writes None.
 func (u User) MarshalJSON() ([]byte, error) {
 	type fields User // without this method
 	return json.Marshal(struct {
 		fields
-		Email *string `json:"email"`
-	}{fields(u), orNull(u.Email)})
+		Email     *string `json:"email"`
+		AgentName *string `json:"agent_name"`
+	}{fields(u), orNull(u.Email), orNull(u.AgentName)})
 }
 
 func orNull(s string) *string {
@@ -200,7 +214,8 @@ type identityClaims struct {
 // Verify checks a token's signature, issuer, audience, expiry and claims.
 func (v *Verifier) Verify(token string) (User, error) {
 	var c identityClaims
-	if _, err := v.parse(token, v.config.AppID, &c); err != nil {
+	raw, err := v.parse(token, v.config.AppID, &c)
+	if err != nil {
 		return User{}, err
 	}
 	if c.IssuedAt == nil || c.Subject == "" || (c.Kind != "user" && c.Kind != "service") {
@@ -212,6 +227,16 @@ func (v *Verifier) Verify(token string) (User, error) {
 	user := User{Kind: c.Kind, Sub: c.Subject, Role: *c.Role, WorkspaceID: *c.WID}
 	if c.Kind == "user" {
 		user.Email = *c.Email
+	}
+	// An agent's token always says who it is. Anyone else's says nothing by the claim, as a bypass
+	// token's email says nothing. Read as written, so a name that isn't a string refuses an agent
+	// and nobody else.
+	if c.Kind == "service" && strings.HasPrefix(c.Subject, agentPrefix) {
+		name, ok := jsonString(raw["agent_name"])
+		if c.Subject == agentPrefix || !ok || name == "" {
+			return User{}, refuse("invalid identity token")
+		}
+		user.AgentName = name
 	}
 	return user, nil
 }
@@ -245,7 +270,7 @@ func (v *Verifier) parse(token, audience string, claims jwt.Claims) (map[string]
 // claimNames are the edge's claim names, in the case it writes them.
 var claimNames = []string{
 	"iss", "aud", "sub", "exp", "iat", "nbf", "jti", "kind", "email", "role", "wid",
-	"provider", "pattern", "delivery", "signed_at",
+	"provider", "pattern", "delivery", "signed_at", "agent_name",
 }
 
 // wellFormed rejects string-typed times, which the edge never writes, and claim names in another

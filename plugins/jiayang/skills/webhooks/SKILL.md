@@ -64,7 +64,8 @@ person exactly what to do.
    Webhooks, your endpoint, Reveal secret. The dialog shows the address to give Stripe, which is
    `<apps domain>/<workspace>/<app>/hooks/stripe`, never the app's own address. For GitHub and
    generic senders the person chooses the secret, and the dialog can generate one to paste in both
-   places. `list_public_paths` shows what's open, and which provider verifies each path.
+   places. `list_public_paths` shows what's open, the address each path is reached at, and which
+   provider verifies each one.
 
 6. **Check it.** A test delivery from the provider reaches the app, and the path's row in the
    dashboard says it was let through. A request with no signature gets 401 from Jiayang Cloud, and

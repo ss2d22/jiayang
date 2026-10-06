@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 - 2026-10-06
+
+- `User` has `AgentName`: the name of the workspace's agent that made the request, or empty for a
+  person, a bypass token or a scheduled job. `user.IsAgent()` says whether an agent called. Decide
+  what an agent may do by `Sub`, which is `agent:<agent id>`; the name can change.
+- `User` marshals `agent_name` too, `null` when empty, as the other SDKs write it.
+- An agent's identity token with no name, an empty one, or an empty agent id is refused, as a
+  person's with no email is. The platform always sends one.
+- A `User` written as an unkeyed literal (`User{"user", ...}`) no longer compiles. Name the fields.
+
 ## 0.1.2 - 2026-10-01
 
 - The README is rewritten in plain words. Nothing in the SDK's behaviour changed.

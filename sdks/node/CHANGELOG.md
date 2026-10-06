@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 - 2026-10-06
+
+- A caller has `agentName`: the name of the workspace's agent that made the request, or `null` for
+  a person, a bypass token or a scheduled job. `isAgent(user)` says whether an agent called. Decide
+  what an agent may do by `sub`, which is `agent:<agent id>`; the name can change.
+- An agent's identity token with no name, an empty one, or an empty agent id is refused, as a
+  person's with no email is. The platform always sends one.
+- `User` has a new required field, so code that builds a `User` by hand (in tests, say) needs
+  `agentName: null`. That is why this is 0.2.0.
+
 ## 0.1.3 - 2026-10-01
 
 - The README is rewritten in plain words. Nothing in the SDK's behaviour changed.

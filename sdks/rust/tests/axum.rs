@@ -169,6 +169,7 @@ async fn a_user_the_layer_did_not_put_there_is_not_a_caller() {
         email: Some("root@evil.test".to_owned()),
         role: "owner".to_owned(),
         workspace_id: "w".to_owned(),
+        agent_name: None,
     };
     let app = app(None, seen.clone()).layer(Extension(planted));
     let (status, _, _) = call(app, None).await;

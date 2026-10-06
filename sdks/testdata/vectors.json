@@ -27,7 +27,8 @@
 				"sub": "access-sub-alice",
 				"email": "alice@example.com",
 				"role": "editor",
-				"workspace_id": "0b000000-0000-4000-8000-00000000000a"
+				"workspace_id": "0b000000-0000-4000-8000-00000000000a",
+				"agent_name": null
 			}
 		},
 		{
@@ -38,7 +39,8 @@
 				"sub": "service:bt_ci",
 				"email": null,
 				"role": "viewer",
-				"workspace_id": "0b000000-0000-4000-8000-00000000000a"
+				"workspace_id": "0b000000-0000-4000-8000-00000000000a",
+				"agent_name": null
 			}
 		},
 		{
@@ -50,7 +52,68 @@
 				"sub": "access-sub-alice",
 				"email": "alice@example.com",
 				"role": "editor",
-				"workspace_id": "0b000000-0000-4000-8000-00000000000a"
+				"workspace_id": "0b000000-0000-4000-8000-00000000000a",
+				"agent_name": null
+			}
+		},
+		{
+			"name": "an agent, by name",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhZ2VudDphZ18wMTIzNDU2Nzg5YWJjZGVmIiwia2luZCI6InNlcnZpY2UiLCJyb2xlIjoiZWRpdG9yIiwid2lkIjoiMGIwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDBhIiwiaWF0IjoxNzg5ODE5MjAwLCJleHAiOjE3ODk4MTkyNjAsImFnZW50X25hbWUiOiJyZWxlYXNlLWJvdCJ9.C_p4LRGzhT4NmS-L5C-Xq-Q4zeNygf982O_E7ENrJBkT5qaiU1SLtZw4ZnFzOjtK1da-gVB0p6juoVsZJsRrFc0YpX5tb2MeDk4UAAJGHPmhjYpy4Q-Q23nZdCk2FbR8bUdqYgQzly0zOeC_HrEXVtECB1okFF4nF0eYLuB7qqlWBdI4P41CJjQlSOyvE0sI4ZmNBGxT0hae2pLjPwhMRFhStoxgpMsOjZbPxais7TG2h4juyJ5jgPgJrVkpVT3IbMXztUXpgOjc8EzStgbSed3BKxsSHtQAndIHZKpLjpjC04b_YytQxppuy6hwmslXj-hz8N0UQMvYvLqPFvmSQg",
+			"user": {
+				"kind": "service",
+				"sub": "agent:ag_0123456789abcdef",
+				"email": null,
+				"role": "editor",
+				"workspace_id": "0b000000-0000-4000-8000-00000000000a",
+				"agent_name": "release-bot"
+			}
+		},
+		{
+			"name": "an agent whose name has spaces and accents",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhZ2VudDphZ18wMTIzNDU2Nzg5YWJjZGVmIiwia2luZCI6InNlcnZpY2UiLCJyb2xlIjoidmlld2VyIiwid2lkIjoiMGIwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDBhIiwiaWF0IjoxNzg5ODE5MjAwLCJleHAiOjE3ODk4MTkyNjAsImFnZW50X25hbWUiOiJOaWdodGx5IHLDqXBvcnQgYm90In0.d2lMAafH4qMOqQjv4UFEPNTm8xrjSVoEIgY9fLwMZPDTWNm9A_MYRsC-Iz1dOgpoeA29lMqLQ3ppO9BDjn1v3H5FrRRiol-78GZFl6fNCisXdueCkGHrHnc0ZMQ_SJEKaEud2BJDETsCMcFRXvA31SV2lQmCso6aOHZGTQPRXY6PVgf4mxegeLtcDupMi07vp1LDeE_Eaz1kPIIXPvyt8_56U0mpPWaDShBfZWl75Jng8g9Fp8_oRMeJOU4Y4GAXMjLewBZig1XDMwhR5FQHie1trN9xs23BxjOoX5_P1XcbeHGEl1GGrfNCoD8_WGep-Q04U8fvhf0Q364GibLZ0g",
+			"user": {
+				"kind": "service",
+				"sub": "agent:ag_0123456789abcdef",
+				"email": null,
+				"role": "viewer",
+				"workspace_id": "0b000000-0000-4000-8000-00000000000a",
+				"agent_name": "Nightly réport bot"
+			}
+		},
+		{
+			"name": "a scheduled job, which is no agent",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJzY2hlZHVsZXI6MGUwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6InNlcnZpY2UiLCJyb2xlIjoiZWRpdG9yIiwid2lkIjoiMGIwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDBhIiwiaWF0IjoxNzg5ODE5MjAwLCJleHAiOjE3ODk4MTkyNjB9.TNmXDzJzTO7iLSZ76PMU4Fw03hr2BPO17e7mLSJo5xgYvOYq_DYEf5-9MahcjVJ64Dzmqcj1vjcDvSgILYctrzkr9jif3s_0dHFq7UFoVFv0GFG98BB71QEz95PruEjHo4s7EGx2ylqiDaC6wmzgzUHoZC7KJamCu7-BeR9cImhFFmEpFfBMlTmlad6SUoMQVIW0ihT6t23ep6J_-pWLkso1wtGp7gN2IImDiovU_lmU2YiKk1uPI70Wd9Gze-abyykJW4xBnVE5hkj7R3rYGTaFkvECTvWUpNx79zyAdFnBHY9AS9zKE0qbfAAHfW4q2IXOY-gQJPo2BvEoHO-1fw",
+			"user": {
+				"kind": "service",
+				"sub": "scheduler:0e000000-0000-4000-8000-000000000001",
+				"email": null,
+				"role": "editor",
+				"workspace_id": "0b000000-0000-4000-8000-00000000000a",
+				"agent_name": null
+			}
+		},
+		{
+			"name": "a bypass token carrying an agent name, ignored",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJzZXJ2aWNlOmJ0X2NpIiwia2luZCI6InNlcnZpY2UiLCJyb2xlIjoiZWRpdG9yIiwid2lkIjoiMGIwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDBhIiwiaWF0IjoxNzg5ODE5MjAwLCJleHAiOjE3ODk4MTkyNjAsImFnZW50X25hbWUiOiJyZWxlYXNlLWJvdCJ9.mIhzmq8o9QRhFL5Ujc7MXyabJlLC7gU7yod_4QXEAaQCw4TfvD6g3ucbXF59icIa-tw6s5cBsPz0CNbs6p7GQ0K3nJFf3Xv0GnfCNFcK4sOnLWjsMehnrr-vwI5XSeWKqg6Zaoz6VJK-TQXbautgVyfzV6ryBJSBzF4TgWCpb0PRqRBbwlE8MD3LTAYdKQOKiM6fYhGmU2qcHKE7YpDuskcp3w5U4-bYzU1FlRLugjrggXTot18KEZlzvy7wRyvKDJqtTTnGs6y2Vy8hUGO_uwo2-fHQCCkbcW8Ug2k2YpVyDflcsVCcbx13FCinOd0W2jzkxKVj5TpQZEcF7hqawA",
+			"user": {
+				"kind": "service",
+				"sub": "service:bt_ci",
+				"email": null,
+				"role": "editor",
+				"workspace_id": "0b000000-0000-4000-8000-00000000000a",
+				"agent_name": null
+			}
+		},
+		{
+			"name": "a person carrying an agent name, ignored",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhY2Nlc3Mtc3ViLWFsaWNlIiwiZW1haWwiOiJhbGljZUBleGFtcGxlLmNvbSIsImtpbmQiOiJ1c2VyIiwicm9sZSI6ImVkaXRvciIsIndpZCI6IjBiMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwYSIsImlhdCI6MTc4OTgxOTIwMCwiZXhwIjoxNzg5ODE5MjYwLCJhZ2VudF9uYW1lIjoicmVsZWFzZS1ib3QifQ.kRbYWCqX5t4H5NhEjzqp4cydooolfZVgQGRfmklDAm4fnFKT8ipM_w_D8TOcsOnRQWPFHnAxjKVLLXi1tdixLUst_3RmA13yS786UTzy5ky6RXXsEcyDWxAp8aaNMrojxF2cDPbRG5N7hxvGJk2A4KTAG9Yqz0PNDkIGmXGk90r1gYXa3nVAZVKPJOPo7VnQwpJ_EbJJ2bMBT8KN0nI5ypFlb-kB3pV4inLqV9CgDuKQB8icMRlZ642NDOn8xrtQRQOST3yyv_4f09-fqpZwE6WV4iWBFP3iTP7AOc_fEGnIp0ovEyTNqqo3HBoLcC6jM7_hwZwYHkQQBV7b_bymvg",
+			"user": {
+				"kind": "user",
+				"sub": "access-sub-alice",
+				"email": "alice@example.com",
+				"role": "editor",
+				"workspace_id": "0b000000-0000-4000-8000-00000000000a",
+				"agent_name": null
 			}
 		}
 	],
@@ -101,7 +164,7 @@
 		},
 		{
 			"name": "PS256 with our key",
-			"token": "eyJhbGciOiJQUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhY2Nlc3Mtc3ViLWFsaWNlIiwiZW1haWwiOiJhbGljZUBleGFtcGxlLmNvbSIsImtpbmQiOiJ1c2VyIiwicm9sZSI6ImVkaXRvciIsIndpZCI6IjBiMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwYSIsImlhdCI6MTc4OTgxOTIwMCwiZXhwIjoxNzg5ODE5MjYwfQ.lhKQxIrG6M1NvZWAWgNg2aUx95JZYSv0JwiMOdT8fpADvLaMGUJnekohmpvKrig6MEBaSy9WRWUiDwrCLa6kKRgWMhJmklX7VsdccudG-Pi-TuDmcwf1vpfy50_7JmbG5Y3SFbxt_H79prBrE3pQ0lHXg7GzK68zSFTqFjWTCdemz74pG4Ozc1VUdYdpImqvSTJpoffMMkTPN39AJN4fl6K4oltw3LQXxvbdV9azpircFJhErMlu24S7XUsMdz2NpaXkD0E9KEEF2vzzaBPnicGrefSndpYMze3pOQOzuZg90pDv4qATOAlaWwylKGx8ylpG5GOGrOFV_FWsmY11OQ"
+			"token": "eyJhbGciOiJQUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhY2Nlc3Mtc3ViLWFsaWNlIiwiZW1haWwiOiJhbGljZUBleGFtcGxlLmNvbSIsImtpbmQiOiJ1c2VyIiwicm9sZSI6ImVkaXRvciIsIndpZCI6IjBiMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwYSIsImlhdCI6MTc4OTgxOTIwMCwiZXhwIjoxNzg5ODE5MjYwfQ.Sj3GCKs9BYxdNBLlG8QjR_QWwYj3F8tsXLYOXFtOf-2lAWhLACeg2n_c2GYCRdSP7D3EEUDMRP1cwVcUSKZuXu-LJORWHrCH-RTpnP3gMMnGxLl8AoX0CxP7pme_x8jwKAuUl1AHQhc0VHgUt_pJH4bcKUt5t_SP05s35kc_leqAPy3sJVRRwldIsdZWvYwOtaCHND8qPgDV-jsPXNiVbiN2g3gURMShi2qRXxNxVL4M8mgt9alsB_V--xwKeFXxqybAyp63mgtcMlk6z1emDhUomV10WxZEw-TK7V-mraCVu5FWQOn8isrBQg1AUlzqaQYnPgoDQcKflvMyhWAoEQ"
 		},
 		{
 			"name": "the wrong key under our kid",
@@ -212,6 +275,34 @@
 		{
 			"name": "a second exp in capitals",
 			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhY2Nlc3Mtc3ViLWFsaWNlIiwiZW1haWwiOiJhbGljZUBleGFtcGxlLmNvbSIsImtpbmQiOiJ1c2VyIiwicm9sZSI6ImVkaXRvciIsIndpZCI6IjBiMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwYSIsImlhdCI6MTc4OTgxOTIwMCwiZXhwIjoxNzg5ODE5MjYwLCJFWFAiOjE3ODk4MjI4MDB9.hvvXQ0KJUKSWwE0gCCLQYqfQJBWmMVmVlRH9A6eqD69yrP20_wBHsSwxKWcAetRRCJeXkMNcyIcdL1kkHKNlmonmYBlTprxT4u7gCuDdOCl2uuXzr3m8zdAw1vInsprQSChp5Z2NUfqXe7_sIv3JUNxnzOyKVba8fDnqtaYyF92vDOvbP0bpSXYjKll9Bc3jIbgwH1xy8K4vqMxszmYOl_S0odgnf3aJ6oT7pFky7CNVh37gUHVSDOUXxMyhPe1aZFdifSid9X1Xd4jsT7aYZ2YG_BYUb-XITcRn64srocQaRQq7m5zU7NyUUj3Qw9AiCEgDgKvrToYDDzNbhpoyKA"
+		},
+		{
+			"name": "an agent_name claim in another case",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhY2Nlc3Mtc3ViLWFsaWNlIiwiZW1haWwiOiJhbGljZUBleGFtcGxlLmNvbSIsImtpbmQiOiJ1c2VyIiwicm9sZSI6ImVkaXRvciIsIndpZCI6IjBiMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwYSIsImlhdCI6MTc4OTgxOTIwMCwiZXhwIjoxNzg5ODE5MjYwLCJBZ2VudF9OYW1lIjoicmVsZWFzZS1ib3QifQ.ZR0iIWyQLVuxWpiK5MkhyBKBx6cZx_V5u4d7sqTnGi1CG_wuPT_lSQC9AmUKuqyvObKNj6SgOSjxv0f2v87c6XhYkZr6jFYbT5k0SjLQjqjrmr66yB37PC_UoQk_FQgOoaUGPweVYfvHDEYTy7GUn-ghX9RhgM3oUo0wvhnFcFz6i4PVtOpxsbyQqIhiSPNRKE0Qt-hoCVu6XHvqa0bDXC31ljdLBMtfR4RyD9GVgZW-YZTaDDYf187Iizzy5fVAUuub_EA8U-oGYARSp6n16_b659Ts7v3mS8GFEAWrr0xnh1fXq__r_80oWmkW8NMJHGQCmFiwHyanAVQiOkeEPg"
+		},
+		{
+			"name": "an agent with no name",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhZ2VudDphZ18wMTIzNDU2Nzg5YWJjZGVmIiwia2luZCI6InNlcnZpY2UiLCJyb2xlIjoiZWRpdG9yIiwid2lkIjoiMGIwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDBhIiwiaWF0IjoxNzg5ODE5MjAwLCJleHAiOjE3ODk4MTkyNjB9.HPqv-OAaYoK5mXp97kisfG99eHuY6z0ZVuCWdimPrCzmRL5uBm0CWmhm1L7ixkZ8uwAw3wPG1tSRUJY8KVhGTQ8E3a-tBzh1upC8zRv40GV6DyNXj7G8tLMK9vq5zPHtsTXHIAQWUhPF3Zyrht7z_N1WPTqxQw2mZ6x7ej-xaZaJRlWF-A1JmlaeJstQVVSm7Da5JyjR9U9DbN33SKLeRv7hPKQ66iOpyPGyaZVWNuS1PYU7kNj5b17jNmyeOfUxNmSOrPoCtyZUoyeOV9so76HYMytFc5Ppvux5_fnUjisIMHqpuvCyYwCLSPJJiNoENgDla8eqlErlo91qw4MPvQ"
+		},
+		{
+			"name": "an agent with an empty name",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhZ2VudDphZ18wMTIzNDU2Nzg5YWJjZGVmIiwia2luZCI6InNlcnZpY2UiLCJyb2xlIjoiZWRpdG9yIiwid2lkIjoiMGIwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDBhIiwiaWF0IjoxNzg5ODE5MjAwLCJleHAiOjE3ODk4MTkyNjAsImFnZW50X25hbWUiOiIifQ.GNV2G9WsGetyNac-5zfj4jRMMli8YDmdPJhHN2JqTr8M729SfwhBI3t59XFV56it1kN_ID2Gzy-HqoQY0z9xiA1UKb24cGIF0dDpAxxGCImxG0pXr3JWpSaM9Dd_YM2KegYGU1WU7DYBe72PBQa0c16guuHQpjamSjQZHahC25wQlBpCrkboF4QPzwEMp7pQA4XQvv7KINmonoCKu6ut-zJp-v9BiB85nY58RV8p1rXNDi7JfSNmFXzIyU9pBhC2tiFTV3zI0CF4S4GgCPRJgPL1o-_iBgYQo8oFsvpUaDPSMCO7eN5lhm1v5UW9ntiuW3oAdBHjJ6aX2XyfuIcyTw"
+		},
+		{
+			"name": "an agent whose name isn't a string",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhZ2VudDphZ18wMTIzNDU2Nzg5YWJjZGVmIiwia2luZCI6InNlcnZpY2UiLCJyb2xlIjoiZWRpdG9yIiwid2lkIjoiMGIwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDBhIiwiaWF0IjoxNzg5ODE5MjAwLCJleHAiOjE3ODk4MTkyNjAsImFnZW50X25hbWUiOjd9.IOOrv_Eq6eiSDR4_MukygteR8PdrAkljZ_eFbpxA_shUfWIc69oAcNcg4QPumgP86WoFcayrVVG9V_xsjBlaonucIFf9ouLiDzj6X0W9rymJHzf4tbjp_Eg0qFM4WAOmLDINw5tN_KsKQAah9drAWIlXJ0pT6MTVYgAFXqJbvC9z2LXOSb9i81-WAYEng2EiT2nrsNpAQiKp1wRdW3XgU-4dZfIUuPMFKUK03wtP4ZPitLKpDH8MyGJTIofofJvAlqigHZobECZ1XqsYy82smXimUjGIxDs9NBBlrpGT2I5Zb07r1lXgkoyYIWafisbhbtQHtWZC9-2-Py6ConDkzw"
+		},
+		{
+			"name": "an agent whose name is null",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhZ2VudDphZ18wMTIzNDU2Nzg5YWJjZGVmIiwia2luZCI6InNlcnZpY2UiLCJyb2xlIjoiZWRpdG9yIiwid2lkIjoiMGIwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDBhIiwiaWF0IjoxNzg5ODE5MjAwLCJleHAiOjE3ODk4MTkyNjAsImFnZW50X25hbWUiOm51bGx9.MZB4LafXgg7MBHtPpJtZbepA24ilKM-eZwuTlEw0rnJdYNbsbNaRsQNGQsHbGdySpqS7WQiT0c5rWnbyg5AcPNn2V9pCjKy4Nzj73N64p_OB4LND9XgG2nWURHyH46I58cTG00rfQHurYe2IdJB4Y8t0e3JMkp-DW-d5b-RDRZZpeEu75iYQl_GvHx88HiiaewM76TH0K8bFbN7A4pPhLmbZV7uvtEC94ySy3H5K8V9dxvknnWBY_efPMdSIuv2L4zQureBGXrPSvhLiciCaHs8ZLLri28_pEZIke079-ZNvwOtC-QZ3JXyozp54VLk-NO7hx5fomaIWfBbogL0Z5g"
+		},
+		{
+			"name": "an agent with no id",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhZ2VudDoiLCJraW5kIjoic2VydmljZSIsInJvbGUiOiJlZGl0b3IiLCJ3aWQiOiIwYjAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMGEiLCJpYXQiOjE3ODk4MTkyMDAsImV4cCI6MTc4OTgxOTI2MCwiYWdlbnRfbmFtZSI6InJlbGVhc2UtYm90In0.g8MsrrK6yK2Znv29NtpnZVTc4ZayXC2Ru9uXgSd9WzUi2gybp7VVvbg3XkhD_4Ckf2o-kyiIMdszTmNS-TvNiCqjsxPVWC1-yYmHmzSr-MznpEzMPcbZdwk-v_ex5TX0sPAIhs28oeKXhBb2A56t9ZrFJYG-oH4RVNY8dvfTQaqUO1JMWbAHuGpjpkTVXc1WVj7IBwLf_NaAS16qwKg6zPgmv-1MxGNAwLs6m9ux4gNTvFM5jNsm2r4jLhY49TJt9rveJyebF-UDhJ0dPTAu13Ztn9vfMfRIrVy-1xadgp1N8ec59Ts8VW2eOOjV8oE2PAbAHe4Zq63pzgq41CgZnA"
+		},
+		{
+			"name": "an agent name in another case",
+			"token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImlkZW50aXR5LWsxIn0.eyJpc3MiOiJodHRwczovL2VkZ2UuZXhhbXBsZS5jb20iLCJhdWQiOiIwYTAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJzdWIiOiJhZ2VudDphZ18wMTIzNDU2Nzg5YWJjZGVmIiwia2luZCI6InNlcnZpY2UiLCJyb2xlIjoiZWRpdG9yIiwid2lkIjoiMGIwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDBhIiwiaWF0IjoxNzg5ODE5MjAwLCJleHAiOjE3ODk4MTkyNjAsIkFnZW50X05hbWUiOiJyZWxlYXNlLWJvdCJ9.jg8IcNI4eVUTVZPLHpFT14YZXUl_YH80nFldWqXjkR6D6JSQXdG9vxB-KsO4YDSOqAWqqG4wMsqhnZkBI_5Xz_i-Id0cKpUZcKggp9A8ZNNMsLLrhjPoLlkTLKXoYozPJGADYYMUEoUW6eQEZFdT6W4vsSfFF32ASRQcouB3bHeDJoT-umTh6s7WnBtA7BUsI2-5S1OYYQn_CZngxkooef_3MQkKjYwa_QntXDEWlY3e0lXyNVxd4hCoyN53C__9SfjJhotOeuTZ0OuyoMx2eQPYJIqYJkS53DQvIvyiHX4WfuiIyQHngFyOI7nS96nuL2Sgn8d602cUUXMOQzr0YA"
 		},
 		{
 			"name": "our key marked for encryption",

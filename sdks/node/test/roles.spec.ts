@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Forbidden, hasRole, requireRole, type Role, type User } from "../src/index";
 
 const who = (role: string): User =>
-	({ kind: "user", sub: "u1", email: "a@example.com", role, workspaceId: "w1" }) as User;
+	({ kind: "user", sub: "u1", email: "a@example.com", role, workspaceId: "w1", agentName: null }) as User;
 
 describe("roles", () => {
 	it("an owner can do what an editor can, and an editor what a viewer can", () => {

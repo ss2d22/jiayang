@@ -50,12 +50,12 @@ const MIN_RSA_BITS: usize = 2048;
 #[error("unauthorized: {0}")]
 pub struct Unauthorized(pub &'static str);
 
-/// Who is calling: a person, or a script with a bypass token.
+/// Who is calling: a person, or a script, an agent or a scheduled job.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
     /// A person.
     User,
-    /// A bypass token.
+    /// A bypass token, a workspace's agent or a scheduled job.
     Service,
 }
 
@@ -63,15 +63,28 @@ pub enum Kind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct User {
     pub kind: Kind,
-    /// Stable id: the person's platform id (`usr_…`), `service:<token id>`, or
-    /// `scheduler:<schedule id>` for a scheduled job.
+    /// Stable id: the person's platform id (`usr_…`), `service:<token id>`, `agent:<agent id>` for
+    /// a workspace's agent, or `scheduler:<schedule id>` for a scheduled job.
     pub sub: String,
-    /// `None` for service tokens.
+    /// `None` for service tokens and agents.
     pub email: Option<String>,
     /// The caller's access to this app.
     pub role: String,
     pub workspace_id: String,
+    /// The agent's name, as the workspace calls it, when an agent called. `None` for everyone else.
+    pub agent_name: Option<String>,
 }
+
+impl User {
+    /// Whether a workspace's agent made this request, rather than a person, a bypass token or a
+    /// scheduled job.
+    pub fn is_agent(&self) -> bool {
+        self.agent_name.is_some()
+    }
+}
+
+/// An agent's `sub` starts with this, and its id follows.
+const AGENT_PREFIX: &str = "agent:";
 
 /// The caller is who they say they are, but not allowed to do this. Respond with 403.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -271,7 +284,23 @@ impl Verifier {
         };
         let role = text("role").ok_or(INVALID)?;
         let workspace_id = text("wid").ok_or(INVALID)?;
-        Ok(User { kind, sub: sub.to_owned(), email, role: role.to_owned(), workspace_id: workspace_id.to_owned() })
+        // An agent's token always says who it is. Anyone else's says nothing by the claim, as a
+        // bypass token's email says nothing.
+        let agent_name = match (kind, sub.strip_prefix(AGENT_PREFIX)) {
+            (Kind::Service, Some(id)) => {
+                let name = text("agent_name").filter(|n| !n.is_empty() && !id.is_empty()).ok_or(INVALID)?;
+                Some(name.to_owned())
+            }
+            _ => None,
+        };
+        Ok(User {
+            kind,
+            sub: sub.to_owned(),
+            email,
+            role: role.to_owned(),
+            workspace_id: workspace_id.to_owned(),
+            agent_name,
+        })
     }
 
     /// Verifies the `X-Jiayang-Identity` header of a webhook delivery from one of `providers`.
@@ -392,7 +421,7 @@ fn whole_seconds(value: &Value) -> Option<u64> {
 }
 
 /// The edge's claim names, in the case it writes them.
-const CLAIM_NAMES: [&str; 15] = [
+const CLAIM_NAMES: [&str; 16] = [
     "iss",
     "aud",
     "sub",
@@ -408,6 +437,7 @@ const CLAIM_NAMES: [&str; 15] = [
     "pattern",
     "delivery",
     "signed_at",
+    "agent_name",
 ];
 
 /// The edge's public keys, cached for five minutes, with unknown-kid refetches limited to one
@@ -573,6 +603,7 @@ mod role_tests {
             email: Some("a@example.com".into()),
             role: role.into(),
             workspace_id: "w1".into(),
+            agent_name: None,
         }
     }
 

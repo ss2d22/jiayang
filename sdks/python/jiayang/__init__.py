@@ -59,7 +59,7 @@ __all__ = [
     "verify_webhook",
 ]
 
-__version__ = "0.1.2"
+__version__ = "0.2.0"
 
 IDENTITY_HEADER = "x-jiayang-identity"
 ALGORITHM = "RS256"
@@ -95,13 +95,26 @@ class Forbidden(Exception):
 @dataclass(frozen=True)
 class User:
     kind: str
-    """ "user" for a person, "service" for a bypass token."""
+    """ "user" for a person; "service" for a bypass token, a workspace's agent or a scheduled job."""
     sub: str
-    """Stable id. The person's platform id ("usr_…"), "service:<token id>", or "scheduler:<schedule id>"."""
+    """Stable id. The person's platform id ("usr_…"), "service:<token id>", "agent:<agent id>" or
+    "scheduler:<schedule id>"."""
     email: str | None
-    """None for service tokens."""
+    """None for service tokens and agents."""
     role: str
     workspace_id: str
+    agent_name: str | None = None
+    """The agent's name, as the workspace calls it, when an agent called. None for everyone else."""
+
+    @property
+    def is_agent(self) -> bool:
+        """Whether a workspace's agent made this request, rather than a person, a bypass token or a
+        scheduled job."""
+        return self.agent_name is not None
+
+
+# An agent's `sub` starts with this, and its id follows.
+_AGENT_PREFIX = "agent:"
 
 
 Role = Literal["viewer", "editor", "owner"]
@@ -432,7 +445,16 @@ def _verified(token: str, key: Any, config: Config, now: float | None) -> User:
         raise Unauthorized("invalid identity token")
     if not isinstance(role, str) or not isinstance(wid, str):
         raise Unauthorized("invalid identity token")
-    return User(kind=kind, sub=sub, email=email if kind == "user" else None, role=role, workspace_id=wid)
+    # An agent's token always says who it is. Anyone else's says nothing by the claim, as a bypass
+    # token's email says nothing.
+    agent_name = None
+    if kind == "service" and sub.startswith(_AGENT_PREFIX):
+        agent_name = claims.get("agent_name")
+        if sub == _AGENT_PREFIX or not isinstance(agent_name, str) or agent_name == "":
+            raise Unauthorized("invalid identity token")
+    return User(
+        kind=kind, sub=sub, email=email if kind == "user" else None, role=role, workspace_id=wid, agent_name=agent_name
+    )
 
 
 # A webhook's token is addressed to "webhook:<app id>", never to the app id alone, so a check
@@ -469,7 +491,10 @@ def _webhook(token: str, key: Any, config: Config, now: float | None, wanted: tu
 
 # The edge's claim names, in the case it writes them.
 _CLAIM_NAMES = frozenset(
-    {"iss", "aud", "sub", "exp", "iat", "nbf", "jti", "kind", "email", "role", "wid", "provider", "pattern", "delivery", "signed_at"}
+    {
+        "iss", "aud", "sub", "exp", "iat", "nbf", "jti", "kind", "email", "role", "wid",
+        "provider", "pattern", "delivery", "signed_at", "agent_name",
+    }
 )
 
 # Beyond this a JSON number may not be the integer that was written, in every language reading it.

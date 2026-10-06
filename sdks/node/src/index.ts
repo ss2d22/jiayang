@@ -29,7 +29,7 @@ export const IDENTITY_HEADER = "x-jiayang-identity";
 // The edge's claim names, in the case it writes them.
 const CLAIM_NAMES = new Set([
 	"iss", "aud", "sub", "exp", "iat", "nbf", "jti", "kind", "email", "role", "wid",
-	"provider", "pattern", "delivery", "signed_at",
+	"provider", "pattern", "delivery", "signed_at", "agent_name",
 ]);
 
 /** Vars the platform binds into every app. */
@@ -46,13 +46,27 @@ export type Role = "viewer" | "editor" | "owner";
 const RANK: Record<string, number> = { viewer: 1, editor: 2, owner: 3 };
 
 export interface User {
+	/** "user" for a person; "service" for a bypass token, a workspace's agent or a scheduled job. */
 	kind: "user" | "service";
-	/** Stable id. The person's platform id ("usr_…"), "service:<token id>", or "scheduler:<schedule id>". */
+	/**
+	 * Stable id. The person's platform id ("usr_…"), "service:<token id>", "agent:<agent id>" or
+	 * "scheduler:<schedule id>".
+	 */
 	sub: string;
-	/** Null for service tokens. */
+	/** Null for service tokens and agents. */
 	email: string | null;
 	role: Role;
 	workspaceId: string;
+	/** The agent's name, as the workspace calls it, when an agent called. Null for everyone else. */
+	agentName: string | null;
+}
+
+/** An agent's `sub` starts with this, and its id follows. */
+const AGENT_PREFIX = "agent:";
+
+/** Whether a workspace's agent made this request, rather than a person, a bypass token or a scheduled job. */
+export function isAgent(user: User): boolean {
+	return user.agentName !== null;
 }
 
 export class Unauthorized extends Error {
@@ -122,7 +136,15 @@ export async function verifyIdentity(token: string, env: JiayangEnv, options: Ve
 	}
 	if (kind === "user" && typeof email !== "string") throw new Unauthorized("invalid identity token");
 	if (typeof role !== "string" || typeof wid !== "string") throw new Unauthorized("invalid identity token");
-	return { kind, sub, email: kind === "user" ? (email as string) : null, role: role as Role, workspaceId: wid };
+	// An agent's token always says who it is. Anyone else's says nothing by the claim, as a bypass
+	// token's email says nothing.
+	let agentName: string | null = null;
+	if (kind === "service" && sub.startsWith(AGENT_PREFIX)) {
+		const name = payload.agent_name;
+		if (sub.length === AGENT_PREFIX.length || typeof name !== "string" || name === "") throw new Unauthorized("invalid identity token");
+		agentName = name;
+	}
+	return { kind, sub, email: kind === "user" ? (email as string) : null, role: role as Role, workspaceId: wid, agentName };
 }
 
 /** Who signs the webhooks the platform can check for you. */

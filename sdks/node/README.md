@@ -201,6 +201,9 @@ reads for anything else. If any is missing, or the keys can't be fetched, every 
 `user.kind` is `"user"` (with `email`) or `"service"` for a bypass token (`email` is `null`).
 A scheduled job is `"service"` too, with a `user.sub` that starts with `"scheduler:"`. Check both
 before doing the job: anyone the app is shared with can call the same path.
+One of the workspace's agents is `"service"` as well, with a `user.sub` of `"agent:<agent id>"` and
+its name in `user.agentName` (`null` for everyone else). `isAgent(user)` says whether an agent
+called. Show the name; decide what an agent may do by `sub`, since a name can change.
 `user.role` is the caller's access to this app.
 
 Tests: `pnpm test`

@@ -37,9 +37,10 @@ class SharedVectors(unittest.TestCase):
                 user = verify(case)
                 want = case["user"]
                 self.assertEqual(
-                    (user.kind, user.sub, user.email, user.role, user.workspace_id),
-                    (want["kind"], want["sub"], want["email"], want["role"], want["workspace_id"]),
+                    (user.kind, user.sub, user.email, user.role, user.workspace_id, user.agent_name),
+                    (want["kind"], want["sub"], want["email"], want["role"], want["workspace_id"], want["agent_name"]),
                 )
+                self.assertEqual(user.is_agent, want["agent_name"] is not None)
 
     def test_refuses_the_invalid_cases(self) -> None:
         for case in VECTORS["invalid"]:

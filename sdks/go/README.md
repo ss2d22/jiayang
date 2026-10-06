@@ -133,10 +133,13 @@ missing, or the keys can't be fetched, every request is refused.
 `user.Kind` is `"user"` (with `Email`) or `"service"` for a bypass token (`Email` is empty).
 A scheduled job is `"service"` too, with a `user.Sub` that starts with `"scheduler:"`. Check both
 before doing the job: anyone the app is shared with can call the same path.
+One of the workspace's agents is `"service"` as well, with a `user.Sub` of `"agent:<agent id>"` and
+its name in `user.AgentName` (empty for everyone else). `user.IsAgent()` says whether an agent
+called. Show the name; decide what an agent may do by `Sub`, since a name can change.
 `user.Role` is the caller's access to this app.
 
 `User` and `Webhook` marshal to JSON with the names the Python and Rust SDKs use (`workspace_id`,
-`signed_at`). An empty email or delivery id is `null`, and `signed_at` is unix seconds or `null`.
+`agent_name`, `signed_at`). An empty email, agent name or delivery id is `null`, and `signed_at` is unix seconds or `null`.
 
 Tests: `go test ./...`
 

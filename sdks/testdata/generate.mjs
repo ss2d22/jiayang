@@ -103,23 +103,43 @@ const hook = (changes) => signed(webhookClaims(changes), WEBHOOK_HEADER);
 
 const edgeJwks = { keys: [publicJwk("edge", "identity-k1")] };
 
+// What the edge mints for a workspace's agent (edge/src/identity.ts): a service, so every SDK
+// takes it, with `sub` saying it's an agent and `agent_name` who.
+const AGENT = "agent:ag_0123456789abcdef";
+const agent = (changes = {}) => good({ kind: "service", sub: AGENT, email: null, agent_name: "release-bot", ...changes });
+const person = { kind: "user", sub: "access-sub-alice", email: "alice@example.com", role: "editor", workspace_id: WID, agent_name: null };
+
 const valid = [
-	{
-		name: "a person",
-		token: good(),
-		user: { kind: "user", sub: "access-sub-alice", email: "alice@example.com", role: "editor", workspace_id: WID },
-	},
+	{ name: "a person", token: good(), user: person },
 	{
 		name: "a bypass token, whose email is ignored",
 		token: good({ kind: "service", sub: "service:bt_ci", email: "ignored@example.com", role: "viewer" }),
-		user: { kind: "service", sub: "service:bt_ci", email: null, role: "viewer", workspace_id: WID },
+		user: { kind: "service", sub: "service:bt_ci", email: null, role: "viewer", workspace_id: WID, agent_name: null },
+	},
+	{ name: "one second before expiry", token: good(), now: NOW + 59, user: person },
+	{
+		name: "an agent, by name",
+		token: agent(),
+		user: { kind: "service", sub: AGENT, email: null, role: "editor", workspace_id: WID, agent_name: "release-bot" },
 	},
 	{
-		name: "one second before expiry",
-		token: good(),
-		now: NOW + 59,
-		user: { kind: "user", sub: "access-sub-alice", email: "alice@example.com", role: "editor", workspace_id: WID },
+		name: "an agent whose name has spaces and accents",
+		token: agent({ agent_name: "Nightly réport bot", role: "viewer" }),
+		user: { kind: "service", sub: AGENT, email: null, role: "viewer", workspace_id: WID, agent_name: "Nightly réport bot" },
 	},
+	{
+		name: "a scheduled job, which is no agent",
+		token: good({ kind: "service", sub: "scheduler:0e000000-0000-4000-8000-000000000001", email: null }),
+		user: { kind: "service", sub: "scheduler:0e000000-0000-4000-8000-000000000001", email: null, role: "editor", workspace_id: WID, agent_name: null },
+	},
+	// Only an agent's token names one. Anywhere else the claim says nothing, as a bypass token's
+	// email says nothing.
+	{
+		name: "a bypass token carrying an agent name, ignored",
+		token: good({ kind: "service", sub: "service:bt_ci", email: null, agent_name: "release-bot" }),
+		user: { kind: "service", sub: "service:bt_ci", email: null, role: "editor", workspace_id: WID, agent_name: null },
+	},
+	{ name: "a person carrying an agent name, ignored", token: good({ agent_name: "release-bot" }), user: person },
 ];
 
 const body = claims();
@@ -161,7 +181,17 @@ const invalid = [
 		"an empty sub": { sub: "" },
 		"a numeric sub": { sub: 42 },
 		"a second exp in capitals": { EXP: NOW + 3600 },
+		"an agent_name claim in another case": { Agent_Name: "release-bot" },
 	}).map(([name, changes]) => ({ name, token: good(changes) })),
+	// An agent's token always says who: one that doesn't is refused, as a person's with no email is.
+	...Object.entries({
+		"an agent with no name": { agent_name: null },
+		"an agent with an empty name": { agent_name: "" },
+		"an agent whose name isn't a string": { agent_name: 7 },
+		"an agent whose name is null": { agent_name: JSON_NULL },
+		"an agent with no id": { sub: "agent:" },
+		"an agent name in another case": { agent_name: null, Agent_Name: "release-bot" },
+	}).map(([name, changes]) => ({ name, token: agent(changes) })),
 	{
 		name: "our key marked for encryption",
 		token: good(),

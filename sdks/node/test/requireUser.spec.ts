@@ -1,6 +1,6 @@
 import { exportJWK, exportSPKI, generateKeyPair, type JWK, SignJWT } from "jose";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { clearKeyCache, requireUser, Unauthorized, verifyIdentity, type JiayangEnv } from "../src/index";
+import { clearKeyCache, isAgent, requireUser, Unauthorized, verifyIdentity, type JiayangEnv } from "../src/index";
 
 // Hostile cases from the tenant side. Only the edge's tokens for this app may pass.
 
@@ -78,12 +78,23 @@ describe("requireUser", () => {
 			email: "alice@example.com",
 			role: "editor",
 			workspaceId: "0b000000-0000-4000-8000-00000000000a",
+			agentName: null,
 		});
 	});
 
 	it("returns a service caller with no email", async () => {
 		const token = await sign(claims({ kind: "service", sub: "service:bt_ci", email: undefined }));
-		expect(await verify(token)).toMatchObject({ kind: "service", sub: "service:bt_ci", email: null });
+		expect(await verify(token)).toMatchObject({ kind: "service", sub: "service:bt_ci", email: null, agentName: null });
+	});
+
+	it("names the agent that called, and says it's one", async () => {
+		const token = await sign(claims({ kind: "service", sub: "agent:ag_0123456789abcdef", email: undefined, agent_name: "release-bot" }));
+		const user = await verify(token);
+		expect(user).toMatchObject({ kind: "service", sub: "agent:ag_0123456789abcdef", email: null, agentName: "release-bot" });
+		expect(isAgent(user)).toBe(true);
+		const person = await verify(await sign(claims({ agent_name: "release-bot" })));
+		expect(isAgent(person)).toBe(false);
+		expect(person.agentName).toBeNull();
 	});
 
 	it("refuses a request with no token, whatever else it carries", async () => {

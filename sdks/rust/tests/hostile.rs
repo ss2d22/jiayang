@@ -155,6 +155,7 @@ async fn returns_the_verified_caller() {
             email: Some("alice@example.com".into()),
             role: "editor".into(),
             workspace_id: "0b000000-0000-4000-8000-00000000000a".into(),
+            agent_name: None,
         }
     );
 }

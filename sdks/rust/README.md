@@ -124,6 +124,13 @@ if user.kind != jiayang::Kind::Service || !user.sub.starts_with("scheduler:") {
 }
 ```
 
+## Agents
+
+One of the workspace's [agents](https://jiayang.cloud/docs/access/agents/) arrives as `kind`
+`"service"` too, with a `sub` of `"agent:<agent id>"` and its name in `user.agent_name` (`None` for
+everyone else). `user.is_agent()` says whether an agent called. Show the name; decide what an agent
+may do by `sub`, since a name can change.
+
 ## Configuration
 
 The platform sets all three variables for your app. Without them, `from_env` fails. While the keys

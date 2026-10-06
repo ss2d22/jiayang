@@ -2,14 +2,14 @@
 import { readFileSync } from "node:fs";
 import { createLocalJWKSet, jwtVerify, type JSONWebKeySet } from "jose";
 import { describe, expect, it } from "vitest";
-import { clearKeyCache, Unauthorized, verifyIdentity, verifyWebhook, type JiayangEnv, type Provider } from "../src/index";
+import { clearKeyCache, isAgent, Unauthorized, verifyIdentity, verifyWebhook, type JiayangEnv, type Provider } from "../src/index";
 
 interface Case {
 	name: string;
 	token: string;
 	now?: number;
 	jwks?: unknown;
-	user?: { kind: string; sub: string; email: string | null; role: string; workspace_id: string };
+	user?: { kind: string; sub: string; email: string | null; role: string; workspace_id: string; agent_name: string | null };
 }
 
 interface WebhookCase extends Case {
@@ -41,7 +41,9 @@ describe("shared vectors", () => {
 	for (const c of v.valid) {
 		it(`accepts ${c.name}`, async () => {
 			const u = c.user!;
-			expect(await verify(c)).toEqual({ kind: u.kind, sub: u.sub, email: u.email, role: u.role, workspaceId: u.workspace_id });
+			const user = await verify(c);
+			expect(user).toEqual({ kind: u.kind, sub: u.sub, email: u.email, role: u.role, workspaceId: u.workspace_id, agentName: u.agent_name });
+			expect(isAgent(user)).toBe(u.agent_name !== null);
 		});
 	}
 	for (const c of v.invalid) {

@@ -59,10 +59,12 @@ async fn accepts_the_valid_cases() {
                 email: want["email"].as_str().map(str::to_owned),
                 role: want["role"].as_str().unwrap().to_owned(),
                 workspace_id: want["workspace_id"].as_str().unwrap().to_owned(),
+                agent_name: want["agent_name"].as_str().map(str::to_owned),
             },
             "{}",
             case["name"]
         );
+        assert_eq!(user.is_agent(), !want["agent_name"].is_null(), "{}", case["name"]);
     }
 }
 

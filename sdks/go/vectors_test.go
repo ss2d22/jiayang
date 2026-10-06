@@ -24,6 +24,7 @@ type vectorCase struct {
 		Email       *string `json:"email"`
 		Role        string  `json:"role"`
 		WorkspaceID string  `json:"workspace_id"`
+		AgentName   *string `json:"agent_name"`
 	} `json:"user"`
 }
 
@@ -113,9 +114,16 @@ func TestSharedVectorsAccepted(t *testing.T) {
 			if c.User.Email != nil {
 				email = *c.User.Email
 			}
-			want := User{Kind: c.User.Kind, Sub: c.User.Sub, Email: email, Role: c.User.Role, WorkspaceID: c.User.WorkspaceID}
+			agent := ""
+			if c.User.AgentName != nil {
+				agent = *c.User.AgentName
+			}
+			want := User{Kind: c.User.Kind, Sub: c.User.Sub, Email: email, Role: c.User.Role, WorkspaceID: c.User.WorkspaceID, AgentName: agent}
 			if got != want {
 				t.Fatalf("got %+v, want %+v", got, want)
+			}
+			if got.IsAgent() != (c.User.AgentName != nil) {
+				t.Fatalf("IsAgent is %v for %+v", got.IsAgent(), got)
 			}
 		})
 	}
