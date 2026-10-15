@@ -330,9 +330,12 @@ func TestNeverFollowsARedirect(t *testing.T) {
 	}))
 	defer server.Close()
 	verify := func(path string) error {
-		c := Config{AppID: app, Issuer: issuer, JWKSURL: server.URL + path}
-		v, _ := NewVerifier(c, WithClock(func() time.Time { return now }))
-		_, err := v.Verify(good(t, nil))
+		// The key set is handed over directly: a config with keys over http is refused outside jiayang dev.
+		v, err := NewVerifier(config, WithKeySet(NewKeySet(server.URL+path, nil)), WithClock(func() time.Time { return now }))
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = v.Verify(good(t, nil))
 		return err
 	}
 	if err := verify("/jwks"); !errors.Is(err, ErrUnauthorized) {

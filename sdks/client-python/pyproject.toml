@@ -1,0 +1,40 @@
+[project]
+name = "jiayang-client"
+version = "0.1.0"
+description = "Call the Jiayang Cloud API from code: deploy, share, read the audit log and manage tokens."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "The Jiayang Cloud Authors" }]
+keywords = ["jiayang", "api", "client", "deploy"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Internet :: WWW/HTTP",
+    "Typing :: Typed",
+]
+requires-python = ">=3.10"
+# truststore, so it trusts what the operating system trusts, as the CLI does. Nothing else.
+dependencies = ["truststore>=0.10,<1"]
+
+[dependency-groups]
+# [build-system]'s requirement again, so that uv.lock pins the build backend by hash.
+# release-python-client.yml builds with this group as its build constraints and --require-hashes.
+build = ["hatchling>=1.27"]
+
+[project.urls]
+Homepage = "https://jiayang.cloud"
+Documentation = "https://jiayang.cloud/docs/sdks/client/"
+Source = "https://github.com/ss2d22/jiayang/tree/main/sdks/client-python"
+Changelog = "https://github.com/ss2d22/jiayang/blob/main/sdks/client-python/CHANGELOG.md"
+Issues = "https://github.com/ss2d22/jiayang/issues"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["jiayang_client"]

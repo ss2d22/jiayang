@@ -191,21 +191,29 @@ pub struct Webhook {
 }
 
 /// What a token is checked against.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Config {
     pub app_id: String,
     pub issuer: String,
     pub jwks_url: String,
+    /// Whether `JIAYANG_DEV` is `1`, which only `jiayang dev` sets. It lets the issuer and key set
+    /// be http on this machine, and changes nothing else. [`Config::from_env`] reads it.
+    pub dev: bool,
 }
 
 impl Config {
-    /// Reads `JIAYANG_APP_ID`, `JIAYANG_IDENTITY_ISSUER` and `JIAYANG_JWKS_URL`.
+    /// Reads `JIAYANG_APP_ID`, `JIAYANG_IDENTITY_ISSUER`, `JIAYANG_JWKS_URL` and `JIAYANG_DEV`.
     pub fn from_env() -> Result<Self, Unauthorized> {
-        let var = |name| std::env::var(name).unwrap_or_default();
+        Self::from_vars(|name| std::env::var(name).ok())
+    }
+
+    fn from_vars(var: impl Fn(&str) -> Option<String>) -> Result<Self, Unauthorized> {
+        let text = |name| var(name).unwrap_or_default();
         Self {
-            app_id: var("JIAYANG_APP_ID"),
-            issuer: var("JIAYANG_IDENTITY_ISSUER"),
-            jwks_url: var("JIAYANG_JWKS_URL"),
+            app_id: text("JIAYANG_APP_ID"),
+            issuer: text("JIAYANG_IDENTITY_ISSUER"),
+            jwks_url: text("JIAYANG_JWKS_URL"),
+            dev: var("JIAYANG_DEV").as_deref() == Some("1"),
         }
         .checked()
     }
@@ -215,7 +223,64 @@ impl Config {
             // Without all three there's nothing to verify against, so refuse.
             return Err(Unauthorized("JIAYANG_APP_ID, JIAYANG_IDENTITY_ISSUER and JIAYANG_JWKS_URL must be set"));
         }
+        // Before any key is fetched, so a deployed app left pointing at a dev edge asks nobody for keys.
+        if !origin_allowed(&self.issuer, &self.jwks_url, self.dev) {
+            return Err(Unauthorized(
+                "JIAYANG_IDENTITY_ISSUER and JIAYANG_JWKS_URL must use https, except under jiayang dev (JIAYANG_DEV=1, on this machine)",
+            ));
+        }
         Ok(self)
+    }
+}
+
+/// Whether tokens may be taken from this issuer, with keys from this URL.
+///
+/// The platform's are always https. Only `jiayang dev` uses http, on this machine, and it sets
+/// `JIAYANG_DEV=1` for the app it runs. The platform never sets that and refuses it as an app's
+/// variable, so a dev issuer left in a deployed app's config refuses everyone rather than trusting
+/// whatever answers on that port.
+fn origin_allowed(issuer: &str, jwks_url: &str, dev: bool) -> bool {
+    if is_https(issuer) && is_https(jwks_url) {
+        return true;
+    }
+    // The issuer is only compared, never fetched, so it names this machine. The keys may come from
+    // the machine running Docker too, which is how a container reaches `jiayang dev`.
+    dev && on_this_machine(issuer, false) && on_this_machine(jwks_url, true)
+}
+
+fn is_https(url: &str) -> bool {
+    url.get(..8).is_some_and(|scheme| scheme.eq_ignore_ascii_case("https://"))
+}
+
+fn on_this_machine(raw: &str, or_docker_host: bool) -> bool {
+    // Anything two URL parsers might read differently is refused rather than reasoned about.
+    if raw.chars().any(|c| c == '\\' || c == '@' || c.is_whitespace()) {
+        return false;
+    }
+    let Ok(url) = reqwest::Url::parse(raw) else { return false };
+    if url.scheme() != "http" || !url.username().is_empty() || url.password().is_some() {
+        return false;
+    }
+    // As written, not as parsed: the url crate reads 127.1 and 0x7f000001 as 127.0.0.1, where
+    // other parsers don't, so a name this takes is one every SDK takes.
+    let host = written_host(raw);
+    if url.host_str() != Some(host.as_str()) {
+        return false;
+    }
+    match host.as_str() {
+        "127.0.0.1" | "localhost" | "[::1]" => true,
+        "host.docker.internal" => or_docker_host,
+        _ => false,
+    }
+}
+
+/// The host between `//` and the port or path, lowercased, brackets kept.
+fn written_host(raw: &str) -> String {
+    let after = raw.split_once("//").map_or("", |(_, rest)| rest);
+    let authority = after.split(['/', '?', '#']).next().unwrap_or("").to_ascii_lowercase();
+    match authority.find(']') {
+        Some(end) if authority.starts_with('[') => authority[..=end].to_owned(),
+        _ => authority.split(':').next().unwrap_or("").to_owned(),
     }
 }
 
@@ -638,5 +703,54 @@ mod role_tests {
         assert!(who("owner").require_role(Role::Editor).is_ok());
         let refused = who("viewer").require_role(Role::Editor).expect_err("a viewer is not an editor");
         assert_eq!(refused.to_string(), "forbidden: this needs editor");
+    }
+}
+
+#[cfg(test)]
+mod origin_tests {
+    #![allow(clippy::unwrap_used, clippy::expect_used)] // tests: a panic is a failure
+    use super::Config;
+    use serde_json::Value;
+
+    fn vectors() -> Value {
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../testdata/vectors.json");
+        serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
+    }
+
+    /// The environment as the case has it, read the way `from_env` reads the process's.
+    fn from(v: &Value, issuer: &str, jwks_url: &str, dev: Option<&str>) -> Result<Config, super::Unauthorized> {
+        let app = v["config"]["app_id"].as_str().unwrap();
+        Config::from_vars(|name| match name {
+            "JIAYANG_APP_ID" => Some(app.to_owned()),
+            "JIAYANG_IDENTITY_ISSUER" => Some(issuer.to_owned()),
+            "JIAYANG_JWKS_URL" => Some(jwks_url.to_owned()),
+            "JIAYANG_DEV" => dev.map(str::to_owned),
+            _ => None,
+        })
+    }
+
+    #[test]
+    fn takes_exactly_the_origins_marked_ok() {
+        let v = vectors();
+        for case in v["origins"].as_array().unwrap() {
+            let name = case["name"].as_str().unwrap();
+            let read =
+                from(&v, case["issuer"].as_str().unwrap(), case["jwks_url"].as_str().unwrap(), case["dev"].as_str());
+            match (case["ok"].as_bool().unwrap(), read) {
+                (true, Err(err)) => panic!("{name}: refused: {err}"),
+                (false, Ok(config)) => panic!("{name}: taken as {config:?}"),
+                (false, Err(err)) => assert!(err.to_string().contains("JIAYANG_DEV=1"), "{name}: {err}"),
+                (true, Ok(_)) => {}
+            }
+        }
+    }
+
+    // Production: jiayang dev's issuer and keys, without the variable only jiayang dev sets.
+    #[test]
+    fn refuses_jiayang_dev_without_jiayang_dev() {
+        let v = vectors();
+        let (issuer, jwks_url) = (v["dev"]["issuer"].as_str().unwrap(), v["dev"]["jwks_url"].as_str().unwrap());
+        assert!(from(&v, issuer, jwks_url, None).is_err());
+        assert!(from(&v, issuer, jwks_url, Some("1")).unwrap().dev);
     }
 }

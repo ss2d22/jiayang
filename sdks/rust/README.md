@@ -20,6 +20,12 @@ let verifier = jiayang::Verifier::from_env()?;
 let user = verifier.require_user(&headers).await?;
 ```
 
+`from_env` returns an error if any of the three is missing.
+Under [`jiayang dev`](https://jiayang.cloud/docs/sdks/local-development/) the issuer and keys are
+http on your machine, and it sets `JIAYANG_DEV=1` for your app. That is the only thing the variable
+does: an http issuer or key set is refused without it, and anywhere but this machine even with it.
+The platform's are https and it never sets the variable, so nothing about verifying changes there.
+
 `user.require_role(Role::Editor)` returns `Forbidden` when the caller's role is too low.
 `Unauthorized` means there is no valid caller. `has_role` checks without returning an error.
 

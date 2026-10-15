@@ -56,5 +56,6 @@ export function envFromProcess(): JiayangEnv {
 		JIAYANG_APP_ID: from.JIAYANG_APP_ID,
 		JIAYANG_IDENTITY_ISSUER: from.JIAYANG_IDENTITY_ISSUER,
 		JIAYANG_JWKS_URL: from.JIAYANG_JWKS_URL,
+		JIAYANG_DEV: from.JIAYANG_DEV,
 	};
 }

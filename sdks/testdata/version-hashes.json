@@ -1,0 +1,88 @@
+{
+	"comment": "What the control plane names a version by (version_hash and the bundle's sha256 in crates/control-plane/src/services/deploy.rs). Each API client works out the same name for what it sends, so a deploy whose answer never came finds its own version and not a teammate's. A test in deploy.rs and in each client holds them to these.",
+	"site": {
+		"files": [
+			{
+				"path": "/index.html",
+				"sha256": "1bc04b5291c26a46d918139138b992d2de976d6851d0893b0476b85bfbdfc6e6",
+				"size": 5,
+				"content_type": "text/html; charset=utf-8"
+			},
+			{
+				"path": "/a/b.css",
+				"sha256": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+				"size": 1,
+				"content_type": "text/css; charset=utf-8"
+			},
+			{
+				"path": "/a.js",
+				"sha256": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+				"size": 1,
+				"content_type": "text/javascript; charset=utf-8"
+			},
+			{
+				"path": "/Z.txt",
+				"sha256": "594e519ae499312b29433b7dd8a97ff068defcba9755b6d5d00e84c524d67b06",
+				"size": 1,
+				"content_type": "text/plain; charset=utf-8"
+			},
+			{
+				"path": "/a-b.png",
+				"sha256": "8f8cbb7dcf46e0bc7d53265749a6c17d116093a6ba95e442764060c76fd4a86c",
+				"size": 3,
+				"content_type": "image/png"
+			}
+		],
+		"sha256": "d8318a4e34d4f03a9b1217761cb9e5634fcb5afb15f5d1279896c253c573f7a3"
+	},
+	"worker": {
+		"deploy": {
+			"main_module": "index.js",
+			"compatibility_date": "2026-09-01",
+			"compatibility_flags": [
+				"nodejs_compat",
+				"nodejs_compat"
+			],
+			"modules": {
+				"index.js": {
+					"type": "esm",
+					"b64": "aW1wb3J0IHggZnJvbSAnLi9saWIveC5qcyc7CmV4cG9ydCBkZWZhdWx0IHsgZmV0Y2goKSB7IHJldHVybiBuZXcgUmVzcG9uc2UoeCk7IH0gfTsK"
+				},
+				"lib/x.js": {
+					"type": "esm",
+					"b64": "ZXhwb3J0IGRlZmF1bHQgJ2hpJzsK"
+				},
+				"words.txt": {
+					"type": "text",
+					"b64": "aMOpbGxvCg=="
+				},
+				"blob.bin": {
+					"type": "data",
+					"b64": "AAEC/w=="
+				}
+			},
+			"assets": {
+				"files": [
+					{
+						"path": "/index.html",
+						"sha256": "1bc04b5291c26a46d918139138b992d2de976d6851d0893b0476b85bfbdfc6e6",
+						"size": 5,
+						"content_type": "text/html; charset=utf-8"
+					},
+					{
+						"path": "/a/b.css",
+						"sha256": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+						"size": 1,
+						"content_type": "text/css; charset=utf-8"
+					}
+				],
+				"not_found_handling": "single-page-application",
+				"run_worker_first": [
+					"/api/*",
+					"/auth"
+				]
+			}
+		},
+		"sha256": "b3a7087e8eae8105385ec6ef642db2a6798495e1ec5633f30a4bb0d41af90a1d"
+	}
+}

@@ -38,6 +38,11 @@ export interface JiayangEnv {
 	JIAYANG_APP_ID?: string;
 	JIAYANG_IDENTITY_ISSUER?: string;
 	JIAYANG_JWKS_URL?: string;
+	/**
+	 * "1" only under `jiayang dev`, which lets the issuer and key set be http on this machine. The
+	 * platform never sets it, and nothing else about verifying changes with it.
+	 */
+	JIAYANG_DEV?: string;
 }
 
 /** What a caller may do with this app. Ordered: an owner can do what an editor can. */
@@ -234,6 +239,8 @@ async function verified(token: string, env: JiayangEnv, options: VerifyOptions, 
 		// Deny if any are missing, since there's nothing to check the token against.
 		throw new Unauthorized("JIAYANG_APP_ID, JIAYANG_IDENTITY_ISSUER and JIAYANG_JWKS_URL must be set");
 	}
+	// Before any key is fetched, so a deployed app left pointing at a dev edge asks nobody for keys.
+	if (!originAllowed(issuer, jwksUrl, env.JIAYANG_DEV)) throw new Unauthorized(ORIGIN_REFUSED);
 
 	let payload: Record<string, unknown>;
 	try {
@@ -260,6 +267,54 @@ async function verified(token: string, env: JiayangEnv, options: VerifyOptions, 
 		if (CLAIM_NAMES.has(name.toLowerCase()) && !CLAIM_NAMES.has(name)) throw new Unauthorized("invalid identity token");
 	}
 	return payload;
+}
+
+const ORIGIN_REFUSED = "JIAYANG_IDENTITY_ISSUER and JIAYANG_JWKS_URL must use https, except under jiayang dev (JIAYANG_DEV=1, on this machine)";
+
+/**
+ * Whether tokens may be taken from this issuer, with keys from this URL.
+ *
+ * The platform's are always https. Only `jiayang dev` uses http, on this machine, and it sets
+ * JIAYANG_DEV=1 for the app it runs. The platform never sets that and refuses it as an app's
+ * variable, so a dev issuer left in a deployed app's config refuses everyone rather than trusting
+ * whatever answers on that port.
+ */
+function originAllowed(issuer: string, jwksUrl: string, dev: string | undefined): boolean {
+	if (isHttps(issuer) && isHttps(jwksUrl)) return true;
+	if (dev !== "1") return false;
+	// The issuer is only compared, never fetched, so it names this machine. The keys may come from
+	// the machine running Docker too, which is how a container reaches `jiayang dev`.
+	return onThisMachine(issuer, false) && onThisMachine(jwksUrl, true);
+}
+
+function isHttps(url: string): boolean {
+	return url.slice(0, 8).toLowerCase() === "https://";
+}
+
+const THIS_MACHINE = new Set(["127.0.0.1", "localhost", "[::1]"]);
+const DOCKER_HOST = "host.docker.internal";
+
+function onThisMachine(raw: string, orDockerHost: boolean): boolean {
+	// Anything two URL parsers might read differently is refused rather than reasoned about.
+	if (/[\\@\s]/.test(raw)) return false;
+	let url: URL;
+	try {
+		url = new URL(raw);
+	} catch {
+		return false;
+	}
+	if (url.protocol !== "http:") return false;
+	// As written, not as parsed: URL reads 127.1 and 0x7f000001 as 127.0.0.1, where other parsers
+	// don't, so a name this takes is one every SDK takes.
+	const host = writtenHost(raw);
+	if (host !== url.hostname) return false;
+	return THIS_MACHINE.has(host) || (orDockerHost && host === DOCKER_HOST);
+}
+
+/** The host between `//` and the port or path, lowercased, brackets kept. */
+function writtenHost(raw: string): string {
+	const authority = ((raw.split("//", 2)[1] ?? "").split(/[/?#]/, 1)[0] ?? "").toLowerCase();
+	return authority.startsWith("[") ? authority.slice(0, authority.indexOf("]") + 1) : (authority.split(":", 1)[0] ?? "");
 }
 
 /** The key set couldn't be had: the fetch failed, or what came back wasn't a key set. */

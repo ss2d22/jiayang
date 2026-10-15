@@ -75,6 +75,9 @@ that, so the build always runs with `DOCKER_BUILDKIT=1`. When `docker buildx ver
 goes by your own ignore files alone: add `.env` and `.venv` to `.dockerignore` (and to
 `.containerignore`, if you have one), or build with a docker that has buildx.
 
+Once the image is built, `jiayang deploy` reads its layers and its config (its environment and
+build steps) for keys before it pushes, and sends the platform what it found, never the files.
+
 That check is a speed bump, not a guarantee. Secrets belong in `jiayang secret set`, where they are
 held by the platform and injected per request rather than baked into a layer that lives forever.
 

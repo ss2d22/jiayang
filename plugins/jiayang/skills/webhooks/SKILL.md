@@ -10,8 +10,9 @@ path is opened to the internet, and no other. Jiayang Cloud checks the sender's 
 path before the app sees the request, so the app never holds the provider's signing secret.
 
 You can't open the path or set up its verifier. Both need a person signed in to the dashboard, so
-that an agent can't be talked into opening an app to strangers. Build the endpoint, then tell the
-person exactly what to do.
+that an agent can't be talked into opening an app to strangers. The workspace's publish policy can
+also limit who may open one: `publish_policy` says whether this person may. Build the endpoint, then
+tell the person exactly what to do.
 
 1. **Build the endpoint.** Use one path for one sender, such as `/hooks/stripe`, not `/api/*`.
    Deliveries arrive as POST.

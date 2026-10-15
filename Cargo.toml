@@ -11,6 +11,8 @@ publish = false
 [workspace.dependencies]
 
 aes-gcm = "0.10"
+# One pass over a deploy's files for every secret rule at once (crates/shared/src/scan).
+aho-corasick = "1"
 anyhow = "1"
 axum = { version = "0.8", features = ["multipart"] }
 base64 = "0.22"

@@ -104,6 +104,10 @@ Precedence, highest first: a flag, then `jiayang.json`, then your wrangler confi
   says) and stops. It builds nothing, uploads nothing and doesn't create the app.
 - What goes up is checked for credentials before anything is sent: a site's files and a Worker's
   modules once the build has written them, a container's build context before the image is built.
+- Every deploy is then scanned: for keys left in what it sends, and for packages its lock files
+  pin that have published vulnerabilities. Only package names and versions go to
+  [OSV](https://osv.dev). The workspace decides whether a finding warns or refuses the deploy, and a
+  `.jiayang-allow` file accepts findings someone has looked at. `jiayang scans` reads the reports.
 
 ## Environment
 
@@ -138,10 +142,10 @@ config asking for anything else is refused before the build, by name, with what 
 wrangler.jsonc asks for things this platform doesn't hand out:
   vars (API_BASE): plain values belong in `jiayang env set`
     jiayang env set <app> API_BASE=<value>
-  kv_namespaces (CACHE): the platform doesn't hand out KV
+  ai (AI): the platform doesn't hand out Workers AI
 ```
 
-KV, other R2 buckets, queues, service bindings, Durable Objects, dispatch namespaces, Workers AI, Vectorize,
+KV and queues other than the app's own (bound as `KV` and `QUEUE` when jiayang.json asks), other R2 buckets, service bindings, Durable Objects, dispatch namespaces, Workers AI, Vectorize,
 Hyperdrive, browser rendering, mTLS certificates, email, Workflows, containers and `unsafe` are all
 refused. So are `routes`, `triggers`, `crons` and anything else that would put your Worker
 somewhere other than the platform's edge. That is the one property the whole product rests on.

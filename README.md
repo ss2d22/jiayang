@@ -15,8 +15,8 @@ with their browser. A script sends a bypass token instead and gets the same chec
 
 The docs are at https://jiayang.cloud/docs/.
 
-This repository holds the open-source SDKs your app verifies its callers with, the agent plugin,
-and the CLI's releases. The `jiayang` CLI is installed as a binary: by the script above, `irm
+This repository holds the open-source SDKs your app verifies its callers with, the API clients,
+the agent plugin, and the CLI's releases. The `jiayang` CLI is installed as a binary: by the script above, `irm
 https://jiayang.cloud/install.ps1 | iex` in PowerShell, `brew install ss2d22/tap/jiayang`, or
 `npm install -g jiayang`. Like the platform, it is closed source.
 
@@ -40,11 +40,12 @@ trusts either on top of the system's.
 
 The CLI trusts its environment the way git, gh and the AWS CLI do. `JIAYANG_API`,
 `JIAYANG_APPS_URL`, `JIAYANG_CONFIG_DIR`, `XDG_CONFIG_HOME`, `HTTP_PROXY`, `HTTPS_PROXY`,
-`ALL_PROXY`, `NO_PROXY`, `JIAYANG_CA_FILE` and `SSL_CERT_FILE` control where it connects, what it
-trusts and where it keeps your session. Only set them to values you chose, and that includes
-anything a tool like direnv loads from a project's `.envrc`.
+`ALL_PROXY`, `NO_PROXY`, `JIAYANG_CA_FILE`, `SSL_CERT_FILE`, `JIAYANG_IMPORT_VERCEL_API` and
+`JIAYANG_IMPORT_NETLIFY_API` control where it connects, what it trusts and where it keeps your
+session. Only set them to values you chose, and that includes anything a tool like direnv loads
+from a project's `.envrc`.
 
-The CLI never reads a `.env` file. It never sends a token to another machine over plain http, and
+The CLI never reads a `.env` file, unless you name one with `jiayang import --env-file`. It never sends a token to another machine over plain http, and
 never sends localhost or loopback traffic through a proxy. If you sign in to any API other than
 `https://api.jiayang.cloud`, `jiayang login` tells you which one.
 
@@ -112,7 +113,8 @@ signed in as: any email, any role, or signed out.
 
 The CLI is also an MCP server, so the agent that wrote your app can deploy it. The plugin in
 [plugins/jiayang](plugins/jiayang) adds it to Claude Code, Codex or Cursor with skills for
-deploying, sharing and checking who is calling:
+deploying, sharing and checking who is calling, and for schedules, previews, an app's data, its
+outbound requests and the workspace itself:
 
 ```text
 /plugin marketplace add ss2d22/jiayang                  # Claude Code, in a session
@@ -158,6 +160,26 @@ that in the dashboard.
 - [docs/webhooks.md](docs/webhooks.md): receiving webhooks, with the platform checking each signature
 
 The full docs are at https://jiayang.cloud/docs/.
+
+## From code
+
+The API clients deploy, share apps, read the audit log and manage tokens from a script, signed in
+with the session `jiayang login` saved, or `JIAYANG_TOKEN`:
+
+```sh
+npm install @jiayang-cloud/client    # sdks/client-node
+pip install jiayang-client           # sdks/client-python
+```
+
+```js
+import { Jiayang } from "@jiayang-cloud/client";
+
+const jy = new Jiayang();
+await jy.access.share("acme", "hello", "someone@example.com");
+for await (const entry of jy.audit.iterate("acme")) console.log(entry.at, entry.action);
+```
+
+See https://jiayang.cloud/docs/sdks/client/.
 
 ## Licence
 

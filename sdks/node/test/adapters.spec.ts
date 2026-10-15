@@ -1,7 +1,7 @@
-import { exportJWK, generateKeyPair, type JWK, SignJWT } from "jose";
+import { decodeJwt, exportJWK, generateKeyPair, type JWK, SignJWT } from "jose";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearKeyCache, Forbidden, Unauthorized, type JiayangEnv } from "../src/index";
-import { requireUserFrom, requireWebhookFrom } from "../src/node";
+import { envFromProcess, requireUserFrom, requireWebhookFrom } from "../src/node";
 import { requireUser as expressRequireUser, requireWebhook as expressRequireWebhook, withUser } from "../src/express";
 import { getUser, getWebhook, jiayang, webhook } from "../src/hono";
 import { getUser as nextGetUser, requireUser as nextRequireUser, requireWebhook as nextRequireWebhook } from "../src/next";
@@ -328,6 +328,24 @@ describe("hono", () => {
 			for (const name of Object.keys(env)) vi.stubEnv(name, undefined);
 			const c = context({ "x-jiayang-identity": await token() }, nodeServer);
 			expect(((await jiayang(verify)(c, async () => {})) as Response).status).toBe(401);
+		});
+
+		// jiayang dev starts a Node server with JIAYANG_DEV=1 beside an http issuer. Read with the
+		// rest, or every request under it is refused; left out of process.env, everything is.
+		it("reads JIAYANG_DEV from process.env with the rest", async () => {
+			const local = { JIAYANG_IDENTITY_ISSUER: "http://127.0.0.1:8787", JIAYANG_JWKS_URL: "http://127.0.0.1:8787/.jiayang/jwks.json" };
+			for (const [name, value] of Object.entries({ ...env, ...local })) vi.stubEnv(name, value);
+			const devToken = await new SignJWT({ ...decodeJwt(await token()), iss: local.JIAYANG_IDENTITY_ISSUER })
+				.setProtectedHeader({ alg: "RS256", kid: "identity-k1", typ: "JWT" })
+				.sign(edgeKey.privateKey);
+			const c = () => context({ "x-jiayang-identity": devToken }, nodeServer);
+
+			expect(((await jiayang(verify)(c(), async () => {})) as Response).status).toBe(401);
+			vi.stubEnv("JIAYANG_DEV", "1");
+			const allowed = c();
+			expect(await jiayang(verify)(allowed, async () => {})).toBeUndefined();
+			expect(getUser(allowed)).toMatchObject({ email: "alice@example.com" });
+			expect(await requireUserFrom({ headers: { "x-jiayang-identity": devToken } }, envFromProcess(), verify)).toMatchObject({ email: "alice@example.com" });
 		});
 
 		it("takes the bindings over process.env wherever there are bindings", async () => {

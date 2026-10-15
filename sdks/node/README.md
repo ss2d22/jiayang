@@ -198,6 +198,11 @@ they arrive as bindings, which is the `env` you pass; everywhere else they're in
 which the `/express`, `/next` and `/hono` entries read for you, and `envFromProcess()` in `/node`
 reads for anything else. If any is missing, or the keys can't be fetched, every request is refused.
 
+Under [`jiayang dev`](https://jiayang.cloud/docs/sdks/local-development/) the issuer and keys are
+http on your machine, and it sets `JIAYANG_DEV=1` for your app (a Worker gets it as a binding). That is the only thing the variable
+does: an http issuer or key set is refused without it, and anywhere but this machine even with it.
+The platform's are https and it never sets the variable, so nothing about verifying changes there.
+
 `user.kind` is `"user"` (with `email`) or `"service"` for a bypass token (`email` is `null`).
 A scheduled job is `"service"` too, with a `user.sub` that starts with `"scheduler:"`. Check both
 before doing the job: anyone the app is shared with can call the same path.

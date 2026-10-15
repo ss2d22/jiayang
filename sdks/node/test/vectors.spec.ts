@@ -25,6 +25,8 @@ const v = JSON.parse(readFileSync(new URL("../../testdata/vectors.json", import.
 	invalid: Case[];
 	webhook_valid: WebhookCase[];
 	webhook_invalid: WebhookCase[];
+	origins: { name: string; ok: boolean; issuer: string; jwks_url: string; dev: string | null }[];
+	dev: { issuer: string; jwks_url: string; token: string; user: NonNullable<Case["user"]> };
 };
 
 const env: JiayangEnv = { JIAYANG_APP_ID: v.config.app_id, JIAYANG_IDENTITY_ISSUER: v.config.issuer, JIAYANG_JWKS_URL: v.config.jwks_url };
@@ -84,5 +86,61 @@ describe("shared webhook vectors", () => {
 			});
 			await expect(generic, c.name).rejects.toThrow(/aud/);
 		}
+	});
+});
+
+describe("shared origin vectors", () => {
+	// A token from wherever the case names, so the origin is all that decides it.
+	const from = (issuer: string, jwksUrl: string, dev: string | null): JiayangEnv => ({
+		JIAYANG_APP_ID: v.config.app_id,
+		JIAYANG_IDENTITY_ISSUER: issuer,
+		JIAYANG_JWKS_URL: jwksUrl,
+		...(dev === null ? {} : { JIAYANG_DEV: dev }),
+	});
+
+	for (const c of v.origins) {
+		it(`${c.ok ? "takes" : "refuses"} ${c.name}`, async () => {
+			clearKeyCache();
+			let fetched = false;
+			const fetch = async () => {
+				fetched = true;
+				return Response.json(v.jwks);
+			};
+			const token = v.valid[0]!.token;
+			const result = verifyIdentity(token, from(c.issuer, c.jwks_url, c.dev), { now: v.now * 1000, fetch });
+			if (c.ok) {
+				// The token's issuer is the platform's, so a dev origin that's taken still refuses it, on
+				// its issuer, after asking for keys.
+				await result.catch(() => undefined);
+				expect(fetched).toBe(true);
+			} else {
+				await expect(result).rejects.toThrow(/JIAYANG_DEV=1/);
+				expect(fetched, "keys were asked for from an origin that isn't taken").toBe(false);
+			}
+		});
+	}
+
+	const dev = from(v.dev.issuer, v.dev.jwks_url, "1");
+	const options = () => {
+		clearKeyCache();
+		return { now: v.now * 1000, fetch: async () => Response.json(v.jwks) };
+	};
+
+	it("takes a token from jiayang dev under JIAYANG_DEV=1", async () => {
+		const u = v.dev.user;
+		expect(await verifyIdentity(v.dev.token, dev, options())).toEqual({
+			kind: u.kind, sub: u.sub, email: u.email, role: u.role, workspaceId: u.workspace_id, agentName: u.agent_name,
+		});
+	});
+
+	// Production: the same token and the same dev config, without the variable only jiayang dev sets.
+	it("refuses a token from jiayang dev without JIAYANG_DEV", async () => {
+		const { JIAYANG_DEV: _, ...production } = dev;
+		await expect(verifyIdentity(v.dev.token, production, options())).rejects.toBeInstanceOf(Unauthorized);
+		await expect(verifyWebhook(v.dev.token, production, { ...options(), provider: "stripe" })).rejects.toThrow(/JIAYANG_DEV=1/);
+	});
+
+	it("refuses a token from jiayang dev against the platform's issuer, even under JIAYANG_DEV=1", async () => {
+		await expect(verifyIdentity(v.dev.token, { ...env, JIAYANG_DEV: "1" }, options())).rejects.toThrow("invalid identity token");
 	});
 });

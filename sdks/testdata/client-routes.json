@@ -1,0 +1,149 @@
+{
+	"//": "Every request the API clients in sdks/client-node and sdks/client-python make. Their tests hold them to it, and the control plane's tests check each one is served to a CLI session.",
+	"routes": [
+		{
+			"method": "GET",
+			"path": "/v1/me"
+		},
+		{
+			"method": "POST",
+			"path": "/v1/workspaces"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}/members"
+		},
+		{
+			"method": "PUT",
+			"path": "/v1/workspaces/{ws}/members/{email}"
+		},
+		{
+			"method": "DELETE",
+			"path": "/v1/workspaces/{ws}/members/{email}"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}/apps"
+		},
+		{
+			"method": "POST",
+			"path": "/v1/workspaces/{ws}/apps"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}/apps/{app}"
+		},
+		{
+			"method": "PATCH",
+			"path": "/v1/workspaces/{ws}/apps/{app}"
+		},
+		{
+			"method": "DELETE",
+			"path": "/v1/workspaces/{ws}/apps/{app}"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}/apps/{app}/versions"
+		},
+		{
+			"method": "POST",
+			"path": "/v1/workspaces/{ws}/apps/{app}/versions"
+		},
+		{
+			"method": "POST",
+			"path": "/v1/workspaces/{ws}/apps/{app}/site"
+		},
+		{
+			"method": "POST",
+			"path": "/v1/workspaces/{ws}/apps/{app}/blobs/missing"
+		},
+		{
+			"method": "POST",
+			"path": "/v1/workspaces/{ws}/apps/{app}/blobs"
+		},
+		{
+			"method": "PUT",
+			"path": "/v1/workspaces/{ws}/apps/{app}/blobs/{sha256}"
+		},
+		{
+			"method": "POST",
+			"path": "/v1/workspaces/{ws}/apps/{app}/rollback"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}/apps/{app}/grants"
+		},
+		{
+			"method": "PUT",
+			"path": "/v1/workspaces/{ws}/apps/{app}/grants/{email}"
+		},
+		{
+			"method": "DELETE",
+			"path": "/v1/workspaces/{ws}/apps/{app}/grants/{email}"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}/apps/{app}/domain-grants"
+		},
+		{
+			"method": "PUT",
+			"path": "/v1/workspaces/{ws}/apps/{app}/domain-grants/{domain}"
+		},
+		{
+			"method": "DELETE",
+			"path": "/v1/workspaces/{ws}/apps/{app}/domain-grants/{domain}"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}/apps/{app}/group-grants"
+		},
+		{
+			"method": "PUT",
+			"path": "/v1/workspaces/{ws}/apps/{app}/group-grants/{group}"
+		},
+		{
+			"method": "DELETE",
+			"path": "/v1/workspaces/{ws}/apps/{app}/group-grants/{group}"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}/apps/{app}/tokens"
+		},
+		{
+			"method": "POST",
+			"path": "/v1/workspaces/{ws}/apps/{app}/tokens"
+		},
+		{
+			"method": "DELETE",
+			"path": "/v1/workspaces/{ws}/apps/{app}/tokens/{id}"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}/audit"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}/apps/{app}/secrets"
+		},
+		{
+			"method": "PUT",
+			"path": "/v1/workspaces/{ws}/apps/{app}/secrets/{name}"
+		},
+		{
+			"method": "DELETE",
+			"path": "/v1/workspaces/{ws}/apps/{app}/secrets/{name}"
+		},
+		{
+			"method": "GET",
+			"path": "/v1/workspaces/{ws}/apps/{app}/env"
+		},
+		{
+			"method": "PATCH",
+			"path": "/v1/workspaces/{ws}/apps/{app}/env"
+		}
+	]
+}

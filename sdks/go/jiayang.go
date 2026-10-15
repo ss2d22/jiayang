@@ -37,7 +37,9 @@ import (
 	"math"
 	"math/big"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -147,11 +149,23 @@ type Config struct {
 	AppID   string
 	Issuer  string
 	JWKSURL string
+	// Dev is whether JIAYANG_DEV is "1", which only `jiayang dev` sets. It lets the issuer and key
+	// set be http on this machine, and changes nothing else. ConfigFromEnv reads it.
+	Dev bool
 }
 
-// ConfigFromEnv reads JIAYANG_APP_ID, JIAYANG_IDENTITY_ISSUER and JIAYANG_JWKS_URL.
+// ConfigFromEnv reads JIAYANG_APP_ID, JIAYANG_IDENTITY_ISSUER, JIAYANG_JWKS_URL and JIAYANG_DEV.
 func ConfigFromEnv() (Config, error) {
-	c := Config{AppID: os.Getenv("JIAYANG_APP_ID"), Issuer: os.Getenv("JIAYANG_IDENTITY_ISSUER"), JWKSURL: os.Getenv("JIAYANG_JWKS_URL")}
+	return configFrom(os.Getenv)
+}
+
+func configFrom(getenv func(string) string) (Config, error) {
+	c := Config{
+		AppID:   getenv("JIAYANG_APP_ID"),
+		Issuer:  getenv("JIAYANG_IDENTITY_ISSUER"),
+		JWKSURL: getenv("JIAYANG_JWKS_URL"),
+		Dev:     getenv("JIAYANG_DEV") == "1",
+	}
 	return c, c.check()
 }
 
@@ -160,7 +174,54 @@ func (c Config) check() error {
 		// Deny if any are missing, since there's nothing to check the token against.
 		return refuse("JIAYANG_APP_ID, JIAYANG_IDENTITY_ISSUER and JIAYANG_JWKS_URL must be set")
 	}
+	// Before any key is fetched, so a deployed app left pointing at a dev edge asks nobody for keys.
+	if !originAllowed(c.Issuer, c.JWKSURL, c.Dev) {
+		return refuse("JIAYANG_IDENTITY_ISSUER and JIAYANG_JWKS_URL must use https, except under jiayang dev (JIAYANG_DEV=1, on this machine)")
+	}
 	return nil
+}
+
+// originAllowed says whether tokens may be taken from this issuer, with keys from this URL.
+//
+// The platform's are always https. Only `jiayang dev` uses http, on this machine, and it sets
+// JIAYANG_DEV=1 for the app it runs. The platform never sets that and refuses it as an app's
+// variable, so a dev issuer left in a deployed app's config refuses everyone rather than trusting
+// whatever answers on that port.
+func originAllowed(issuer, jwksURL string, dev bool) bool {
+	if isHTTPS(issuer) && isHTTPS(jwksURL) {
+		return true
+	}
+	// The issuer is only compared, never fetched, so it names this machine. The keys may come from
+	// the machine running Docker too, which is how a container reaches `jiayang dev`.
+	return dev && onThisMachine(issuer, false) && onThisMachine(jwksURL, true)
+}
+
+func isHTTPS(raw string) bool {
+	return len(raw) >= 8 && strings.EqualFold(raw[:8], "https://")
+}
+
+func onThisMachine(raw string, orDockerHost bool) bool {
+	// Anything two URL parsers might read differently is refused rather than reasoned about.
+	if strings.ContainsAny(raw, "\\@ \t\r\n\v\f") {
+		return false
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "http" || u.User != nil {
+		return false
+	}
+	// url.Parse takes any digits as a port. The other SDKs' parsers refuse one past 65535.
+	if port := u.Port(); port != "" {
+		if n, err := strconv.Atoi(port); err != nil || n > 65535 {
+			return false
+		}
+	}
+	switch strings.ToLower(u.Hostname()) {
+	case "127.0.0.1", "localhost", "::1":
+		return true
+	case "host.docker.internal":
+		return orDockerHost
+	}
+	return false
 }
 
 // Verifier checks identity tokens for one app. It's safe for concurrent use.

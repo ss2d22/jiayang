@@ -1,5 +1,6 @@
 packages:
   - sdks/node
+  - sdks/client-node
 
 onlyBuiltDependencies:
   - esbuild

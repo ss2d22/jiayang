@@ -55,6 +55,24 @@ type vectorFile struct {
 
 	WebhookValid   []webhookCase `json:"webhook_valid"`
 	WebhookInvalid []webhookCase `json:"webhook_invalid"`
+
+	Origins []struct {
+		Name    string  `json:"name"`
+		OK      bool    `json:"ok"`
+		Issuer  string  `json:"issuer"`
+		JWKSURL string  `json:"jwks_url"`
+		Dev     *string `json:"dev"`
+	} `json:"origins"`
+	Dev struct {
+		Issuer  string `json:"issuer"`
+		JWKSURL string `json:"jwks_url"`
+		Token   string `json:"token"`
+		User    struct {
+			Sub   string `json:"sub"`
+			Email string `json:"email"`
+			Role  string `json:"role"`
+		} `json:"user"`
+	} `json:"dev"`
 }
 
 func loadVectors(t *testing.T) vectorFile {
@@ -192,5 +210,97 @@ func TestAGenericCheckThatTheAudienceIsTheAppRefusesWebhooks(t *testing.T) {
 		if !errors.Is(err, jwt.ErrTokenInvalidAudience) || !strings.Contains(err.Error(), "aud") {
 			t.Errorf("%s: %v", c.Name, err)
 		}
+	}
+}
+
+// An environment holding exactly these, as the process would have them.
+func environment(vars map[string]string) func(string) string {
+	return func(name string) string { return vars[name] }
+}
+
+func (v vectorFile) env(issuer, jwksURL string, dev *string) func(string) string {
+	vars := map[string]string{"JIAYANG_APP_ID": v.Config.AppID, "JIAYANG_IDENTITY_ISSUER": issuer, "JIAYANG_JWKS_URL": jwksURL}
+	if dev != nil {
+		vars["JIAYANG_DEV"] = *dev
+	}
+	return environment(vars)
+}
+
+func TestSharedOriginVectors(t *testing.T) {
+	v := loadVectors(t)
+	for _, c := range v.Origins {
+		t.Run(c.Name, func(t *testing.T) {
+			config, err := configFrom(v.env(c.Issuer, c.JWKSURL, c.Dev))
+			if c.OK && err != nil {
+				t.Fatalf("refused: %v", err)
+			}
+			if !c.OK && (!errors.Is(err, ErrUnauthorized) || !strings.Contains(err.Error(), "JIAYANG_DEV=1")) {
+				t.Fatalf("taken as %+v (err %v)", config, err)
+			}
+			// A config built by hand is held to the same rule.
+			if _, err := NewVerifier(config); c.OK != (err == nil) {
+				t.Fatalf("NewVerifier disagrees: %v", err)
+			}
+		})
+	}
+}
+
+func (v vectorFile) devVerifier(t *testing.T, config Config) (*Verifier, *bool) {
+	t.Helper()
+	fetched := false
+	keys := NewKeySet(config.JWKSURL, func(string) ([]byte, error) { fetched = true; return v.JWKS, nil })
+	at := time.Unix(v.Now, 0)
+	verifier, err := NewVerifier(config, WithKeySet(keys.WithKeyClock(func() time.Time { return at })), WithClock(func() time.Time { return at }))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return verifier, &fetched
+}
+
+func TestATokenFromJiayangDevUnderJiayangDev(t *testing.T) {
+	v := loadVectors(t)
+	one := "1"
+	config, err := configFrom(v.env(v.Dev.Issuer, v.Dev.JWKSURL, &one))
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifier, _ := v.devVerifier(t, config)
+	user, err := verifier.Verify(v.Dev.Token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if user.Sub != v.Dev.User.Sub || user.Email != v.Dev.User.Email || user.Role != v.Dev.User.Role {
+		t.Fatalf("got %+v", user)
+	}
+}
+
+// Production: the same token and the same dev config, without the variable only jiayang dev sets.
+// Refused before any key is asked for, in the package's own functions too.
+func TestATokenFromJiayangDevIsRefusedWithoutJiayangDev(t *testing.T) {
+	v := loadVectors(t)
+	if _, err := configFrom(v.env(v.Dev.Issuer, v.Dev.JWKSURL, nil)); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("taken: %v", err)
+	}
+	if _, err := NewVerifier(Config{AppID: v.Config.AppID, Issuer: v.Dev.Issuer, JWKSURL: v.Dev.JWKSURL}); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("taken by hand: %v", err)
+	}
+
+	t.Setenv("JIAYANG_APP_ID", v.Config.AppID)
+	t.Setenv("JIAYANG_IDENTITY_ISSUER", v.Dev.Issuer)
+	t.Setenv("JIAYANG_JWKS_URL", v.Dev.JWKSURL)
+	t.Setenv("JIAYANG_DEV", "")
+	if _, err := ConfigFromEnv(); !errors.Is(err, ErrUnauthorized) || !strings.Contains(err.Error(), "JIAYANG_DEV=1") {
+		t.Fatalf("taken from the environment: %v", err)
+	}
+}
+
+func TestATokenFromJiayangDevIsRefusedAgainstThePlatformIssuer(t *testing.T) {
+	v := loadVectors(t)
+	verifier, fetched := v.devVerifier(t, Config{AppID: v.Config.AppID, Issuer: v.Config.Issuer, JWKSURL: v.Config.JWKSURL, Dev: true})
+	if _, err := verifier.Verify(v.Dev.Token); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("taken: %v", err)
+	}
+	if !*fetched {
+		t.Fatal("refused before its signature was checked, so this says nothing about the issuer")
 	}
 }

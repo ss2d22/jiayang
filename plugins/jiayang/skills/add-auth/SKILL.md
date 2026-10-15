@@ -25,6 +25,10 @@ Install the SDK for the language. It is published only under these names:
 The Go module is `jiayang.cloud/sdk`. Fetching it by its GitHub path fails with a module path
 mismatch.
 
+`@jiayang-cloud/client` and `jiayang-client` are different packages: API clients for a script that
+deploys, shares or reads the audit log as a signed-in person. They verify nobody. Never use them,
+or a CLI session, inside an app to identify its caller.
+
 Then verify the caller:
 
 ```js
@@ -136,6 +140,7 @@ If any is missing, or the keys can't be fetched, the SDK refuses every request.
 
 Locally, `jiayang dev -- <your start command>` runs the same sign-in edge on your machine and signs
 real tokens with a key made for that session, so the app runs the same code as in production. The
-SDKs have no development mode and can't skip a signature.
+SDKs can't skip a signature. `--as viewer`, `--as agent`, `--as webhook` and the rest show the app
+to each kind of caller (see the `local-dev` skill).
 
 When you're done, `call_app` as yourself and check the app says who you are.

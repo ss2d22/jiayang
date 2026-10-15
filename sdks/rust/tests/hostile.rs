@@ -126,7 +126,7 @@ fn setup_at(now: u64) -> Fixture {
         }),
         Arc::new(move || clock.clock.load(Ordering::SeqCst)),
     );
-    let config = Config { app_id: APP.into(), issuer: ISSUER.into(), jwks_url: JWKS_URL.into() };
+    let config = Config { app_id: APP.into(), issuer: ISSUER.into(), jwks_url: JWKS_URL.into(), dev: false };
     let verifier = Verifier::new(config).unwrap().with_key_set(keys).with_clock(Arc::new(move || now));
     Fixture { jwks, verifier }
 }
@@ -180,7 +180,7 @@ async fn refuses_a_request_with_no_token_whatever_else_it_carries() {
 
 #[test]
 fn refuses_when_the_app_isnt_configured() {
-    let full = Config { app_id: APP.into(), issuer: ISSUER.into(), jwks_url: JWKS_URL.into() };
+    let full = Config { app_id: APP.into(), issuer: ISSUER.into(), jwks_url: JWKS_URL.into(), dev: false };
     for broken in [
         Config { app_id: String::new(), ..full.clone() },
         Config { issuer: String::new(), ..full.clone() },
@@ -357,9 +357,10 @@ async fn serve(response: Vec<u8>) -> String {
     format!("http://{addr}")
 }
 
+/// The key set is handed over directly: a config with keys over http is refused outside jiayang dev.
 fn verifier_at(url: String) -> Verifier {
-    let config = Config { app_id: APP.into(), issuer: ISSUER.into(), jwks_url: url };
-    Verifier::new(config).unwrap().with_clock(Arc::new(|| NOW))
+    let config = Config { app_id: APP.into(), issuer: ISSUER.into(), jwks_url: JWKS_URL.into(), dev: false };
+    Verifier::new(config).unwrap().with_clock(Arc::new(|| NOW)).with_key_set(KeySet::new(&url))
 }
 
 #[tokio::test(flavor = "multi_thread")]

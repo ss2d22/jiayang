@@ -128,6 +128,14 @@ class RequireUser(Base):
             with self.assertRaises(Unauthorized):
                 Config.from_env({**env, missing: ""})
 
+    def test_a_config_built_by_hand_with_a_value_missing_says_so(self):
+        values = {"app_id": APP, "issuer": CONFIG.issuer, "jwks_url": CONFIG.jwks_url}
+        for missing in values:
+            with self.assertRaisesRegex(Unauthorized, "must be set"):
+                Config(**{**values, missing: ""})
+        with self.assertRaisesRegex(Unauthorized, "must be set"):
+            Config("", "", "")
+
 
 class HostileTokens(Base):
     def test_malformed(self):
@@ -292,13 +300,11 @@ class Fetching(unittest.TestCase):
                 pass
 
         base = self.serve(Handler)
-        config = Config(app_id=APP, issuer=CONFIG.issuer, jwks_url=f"{base}/jwks")
-        keys = KeySet(config.jwks_url)
+        # The key set is handed over directly: a config with keys over http is refused outside jiayang dev.
         with self.assertRaises(Unauthorized):
-            verify_identity(sign(claims()), config, now=NOW, keys=keys)
+            verify_identity(sign(claims()), CONFIG, now=NOW, keys=KeySet(f"{base}/jwks"))
         # The same keys verify at the direct URL, so it was the redirect that got refused.
-        direct = Config(app_id=APP, issuer=CONFIG.issuer, jwks_url=f"{base}/elsewhere")
-        self.assertTrue(verify_identity(sign(claims()), direct, now=NOW, keys=KeySet(direct.jwks_url)))
+        self.assertTrue(verify_identity(sign(claims()), CONFIG, now=NOW, keys=KeySet(f"{base}/elsewhere")))
 
     def test_refuses_an_oversized_key_set(self):
         import http.server

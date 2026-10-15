@@ -2,6 +2,7 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)] // tests: a panic is a failure
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use jiayang::{Config, Fetch, KeySet, Kind, Provider, User, Verifier, Webhook};
 use jsonwebtoken::{Algorithm, DecodingKey, Validation};
@@ -17,6 +18,7 @@ fn verifier(v: &Value, case: &Value) -> Verifier {
         app_id: v["config"]["app_id"].as_str().unwrap().to_owned(),
         issuer: v["config"]["issuer"].as_str().unwrap().to_owned(),
         jwks_url: v["config"]["jwks_url"].as_str().unwrap().to_owned(),
+        dev: false,
     };
     let body = serde_json::to_vec(case.get("jwks").unwrap_or(&v["jwks"])).unwrap();
     let now = case.get("now").unwrap_or(&v["now"]).as_u64().unwrap();
@@ -123,4 +125,62 @@ fn a_generic_check_that_the_audience_is_the_app_refuses_webhooks() {
             .expect_err(case["name"].as_str().unwrap());
         assert_eq!(refused.kind(), &jsonwebtoken::errors::ErrorKind::InvalidAudience, "{}", case["name"]);
     }
+}
+
+fn dev_config(v: &Value, dev: bool) -> Config {
+    Config {
+        app_id: v["config"]["app_id"].as_str().unwrap().to_owned(),
+        issuer: v["dev"]["issuer"].as_str().unwrap().to_owned(),
+        jwks_url: v["dev"]["jwks_url"].as_str().unwrap().to_owned(),
+        dev,
+    }
+}
+
+/// A verifier for `config` whose keys are the vectors', counting each time they're asked for.
+fn counted(v: &Value, config: Config) -> Result<(Verifier, Arc<AtomicUsize>), jiayang::Unauthorized> {
+    let body = serde_json::to_vec(&v["jwks"]).unwrap();
+    let now = v["now"].as_u64().unwrap();
+    let fetched = Arc::new(AtomicUsize::new(0));
+    let count = fetched.clone();
+    let fetch: Fetch = Arc::new(move |_url| {
+        count.fetch_add(1, Ordering::SeqCst);
+        let body = body.clone();
+        Box::pin(async move { Ok(body) })
+    });
+    let keys = KeySet::with_fetch(&config.jwks_url, fetch, Arc::new(move || now));
+    Ok((Verifier::new(config)?.with_clock(Arc::new(move || now)).with_key_set(keys), fetched))
+}
+
+#[tokio::test]
+async fn takes_a_token_from_jiayang_dev_under_jiayang_dev() {
+    let v = vectors();
+    let (verifier, _) = counted(&v, dev_config(&v, true)).unwrap();
+    let user = verifier.verify(v["dev"]["token"].as_str().unwrap()).await.unwrap();
+    let want = &v["dev"]["user"];
+    assert_eq!(user.sub, want["sub"].as_str().unwrap());
+    assert_eq!(user.email.as_deref(), want["email"].as_str());
+    assert_eq!(user.role, want["role"].as_str().unwrap());
+}
+
+// Production: the same dev config, without the variable only jiayang dev sets. Nothing verifies,
+// so no key is ever asked for.
+#[test]
+fn refuses_jiayang_dev_without_jiayang_dev() {
+    let v = vectors();
+    let refused = counted(&v, dev_config(&v, false)).err().expect("a dev config was taken without JIAYANG_DEV");
+    assert!(refused.to_string().contains("JIAYANG_DEV=1"), "{refused}");
+}
+
+#[tokio::test]
+async fn refuses_a_token_from_jiayang_dev_against_the_platform_issuer() {
+    let v = vectors();
+    let config = Config {
+        app_id: v["config"]["app_id"].as_str().unwrap().to_owned(),
+        issuer: v["config"]["issuer"].as_str().unwrap().to_owned(),
+        jwks_url: v["config"]["jwks_url"].as_str().unwrap().to_owned(),
+        dev: true,
+    };
+    let (verifier, fetched) = counted(&v, config).unwrap();
+    assert!(verifier.verify(v["dev"]["token"].as_str().unwrap()).await.is_err());
+    assert!(fetched.load(Ordering::SeqCst) > 0, "refused before its signature was checked");
 }

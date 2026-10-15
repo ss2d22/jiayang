@@ -19,6 +19,16 @@ An app deployed here can only be reached through Jiayang Cloud's sign-in. There 
 - Third-party credentials go in `set_secret`, and Jiayang Cloud adds them to the app's outbound
   requests. Never write one into the app's source, its environment, or a file in the repo.
 - Plain configuration goes in `set_env`.
+- A Postgres database the person already has is connected to the workspace by a workspace owner,
+  with `jiayang postgres add` at its own prompt, and given to the app with `grant_postgres`. The app sends SQL to `http://postgres.jiayang.internal`
+  and never holds the URL or the password, so never put either in its code or environment.
+- An app's files and database are read with `list_files`, `read_file` and `query_database`, and
+  changed only when the person asks, with `run_sql`, `upload_file` and `delete_file`.
+  `restore_database` puts a database back as it was.
+- When the user wants code of their own that deploys, shares or reads the audit log, such as a
+  nightly script, use the API client: `@jiayang-cloud/client` for Node or `jiayang-client` for
+  Python. It signs in with the session `jiayang login` saved, or `JIAYANG_TOKEN`. Never write a
+  token into the script. Docs: https://jiayang.cloud/docs/sdks/client/
 - Jiayang Cloud answers an app that isn't shared with the caller with the same 404 as an app that
   doesn't exist. `call_app` says which it was when it can.
 - A 403 from Jiayang Cloud means the workspace is suspended, or a bypass token went to another app.

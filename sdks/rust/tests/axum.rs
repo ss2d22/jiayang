@@ -82,7 +82,7 @@ fn verifier() -> Verifier {
         }),
         Arc::new(|| NOW),
     );
-    let config = Config { app_id: APP.into(), issuer: ISSUER.into(), jwks_url: JWKS_URL.into() };
+    let config = Config { app_id: APP.into(), issuer: ISSUER.into(), jwks_url: JWKS_URL.into(), dev: false };
     Verifier::new(config).unwrap().with_key_set(keys).with_clock(Arc::new(|| NOW))
 }
 

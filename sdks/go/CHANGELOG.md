@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased (0.3.0)
+
+- An issuer or key set on http is refused unless `JIAYANG_DEV` is `1`, and even then only on this
+  machine (`127.0.0.1`, `localhost` or `[::1]`, and for the keys `host.docker.internal` too).
+  `jiayang dev` sets it for the app it runs, from CLI 0.1.11. The platform's issuer and keys are
+  https and it never sets `JIAYANG_DEV`, so a deployed app that still points at `jiayang dev`
+  refuses everyone, and asks nobody for keys.
+- `Config` has `Dev`, which `ConfigFromEnv` reads from `JIAYANG_DEV`. `NewVerifier` returns an error
+  for an http issuer or key set unless `Dev` is true. That is why this is 0.3.0.
+
 ## 0.2.0 - 2026-10-06
 
 - `User` has `AgentName`: the name of the workspace's agent that made the request, or empty for a

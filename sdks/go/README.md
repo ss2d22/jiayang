@@ -130,6 +130,11 @@ Keep these limits in mind:
 The platform sets `JIAYANG_APP_ID`, `JIAYANG_IDENTITY_ISSUER` and `JIAYANG_JWKS_URL`. If any is
 missing, or the keys can't be fetched, every request is refused.
 
+Under [`jiayang dev`](https://jiayang.cloud/docs/sdks/local-development/) the issuer and keys are
+http on your machine, and it sets `JIAYANG_DEV=1` for your app. That is the only thing the variable
+does: an http issuer or key set is refused without it, and anywhere but this machine even with it.
+The platform's are https and it never sets the variable, so nothing about verifying changes there.
+
 `user.Kind` is `"user"` (with `Email`) or `"service"` for a bypass token (`Email` is empty).
 A scheduled job is `"service"` too, with a `user.Sub` that starts with `"scheduler:"`. Check both
 before doing the job: anyone the app is shared with can call the same path.

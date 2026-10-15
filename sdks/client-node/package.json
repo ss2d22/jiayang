@@ -1,0 +1,61 @@
+{
+	"name": "@jiayang-cloud/client",
+	"version": "0.1.0",
+	"description": "Call the Jiayang Cloud API from code: deploy, share, read the audit log and manage tokens.",
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ss2d22/jiayang.git",
+		"directory": "sdks/client-node"
+	},
+	"homepage": "https://jiayang.cloud/docs/sdks/client/",
+	"bugs": "https://github.com/ss2d22/jiayang/issues",
+	"keywords": [
+		"jiayang",
+		"api",
+		"client",
+		"deploy",
+		"cloudflare"
+	],
+	"type": "module",
+	"main": "./dist/index.cjs",
+	"types": "./dist/index.d.cts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.mjs"
+			},
+			"require": {
+				"types": "./dist/index.d.cts",
+				"default": "./dist/index.cjs"
+			}
+		},
+		"./package.json": "./package.json"
+	},
+	"files": [
+		"CHANGELOG.md",
+		"dist",
+		"LICENSE",
+		"NOTICE",
+		"README.md"
+	],
+	"engines": {
+		"node": ">=20"
+	},
+	"sideEffects": false,
+	"publishConfig": {
+		"access": "public",
+		"provenance": true
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json --emitDeclarationOnly --declaration --outDir dist && node build.mjs",
+		"test": "vitest run",
+		"typecheck": "tsc --noEmit -p tsconfig.json"
+	},
+	"devDependencies": {
+		"esbuild": "0.28.1",
+		"typescript": "7.0.2",
+		"vitest": "4.1.11"
+	}
+}

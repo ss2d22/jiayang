@@ -32,6 +32,7 @@ import math
 import os
 import threading
 import time
+import urllib.parse
 import urllib.request
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
@@ -166,15 +167,66 @@ class Config:
     app_id: str
     issuer: str
     jwks_url: str
+    dev: bool = False
+    """Whether JIAYANG_DEV is "1", which only `jiayang dev` sets. It lets the issuer and key set be
+    http on this machine, and changes nothing else. `from_env` reads it."""
+
+    def __post_init__(self) -> None:
+        if not (self.app_id and self.issuer and self.jwks_url):
+            # Deny if any are missing, since there's nothing to check the token against.
+            raise Unauthorized("JIAYANG_APP_ID, JIAYANG_IDENTITY_ISSUER and JIAYANG_JWKS_URL must be set")
+        # Before any key is fetched, so a deployed app left pointing at a dev edge asks nobody for keys.
+        if not _origin_allowed(self.issuer, self.jwks_url, self.dev):
+            raise Unauthorized(_ORIGIN_REFUSED)
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Config:
         env = os.environ if env is None else env
         app_id, issuer, jwks_url = (env.get(n, "") for n in ("JIAYANG_APP_ID", "JIAYANG_IDENTITY_ISSUER", "JIAYANG_JWKS_URL"))
-        if not (app_id and issuer and jwks_url):
-            # Deny if any are missing, since there's nothing to check the token against.
-            raise Unauthorized("JIAYANG_APP_ID, JIAYANG_IDENTITY_ISSUER and JIAYANG_JWKS_URL must be set")
-        return cls(app_id, issuer, jwks_url)
+        return cls(app_id, issuer, jwks_url, dev=env.get("JIAYANG_DEV") == "1")
+
+
+_ORIGIN_REFUSED = (
+    "JIAYANG_IDENTITY_ISSUER and JIAYANG_JWKS_URL must use https, except under jiayang dev (JIAYANG_DEV=1, on this machine)"
+)
+
+
+def _origin_allowed(issuer: str, jwks_url: str, dev: bool) -> bool:
+    """Whether tokens may be taken from this issuer, with keys from this URL.
+
+    The platform's are always https. Only `jiayang dev` uses http, on this machine, and it sets
+    JIAYANG_DEV=1 for the app it runs. The platform never sets that and refuses it as an app's
+    variable, so a dev issuer left in a deployed app's config refuses everyone rather than trusting
+    whatever answers on that port.
+    """
+    if _is_https(issuer) and _is_https(jwks_url):
+        return True
+    # The issuer is only compared, never fetched, so it names this machine. The keys may come from
+    # the machine running Docker too, which is how a container reaches `jiayang dev`.
+    return dev is True and _on_this_machine(issuer, docker=False) and _on_this_machine(jwks_url, docker=True)
+
+
+def _is_https(url: str) -> bool:
+    return isinstance(url, str) and url[:8].lower() == "https://"
+
+
+_THIS_MACHINE: Final[frozenset[str]] = frozenset(("127.0.0.1", "localhost", "::1"))
+_DOCKER_HOST: Final = "host.docker.internal"
+
+
+def _on_this_machine(raw: str, *, docker: bool) -> bool:
+    # Anything two URL parsers might read differently is refused rather than reasoned about.
+    if not isinstance(raw, str) or any(c in raw for c in "\\@") or any(c.isspace() for c in raw):
+        return False
+    try:
+        url = urllib.parse.urlsplit(raw)
+        host = url.hostname
+        url.port  # noqa: B018 - a port that isn't one raises here
+    except ValueError:
+        return False
+    if url.scheme != "http" or host is None:
+        return False
+    return host in _THIS_MACHINE or (docker and host == _DOCKER_HOST)
 
 
 Fetch = Callable[[str], bytes]
