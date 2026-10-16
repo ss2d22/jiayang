@@ -12,7 +12,9 @@
 # repository first, in the dashboard under the app's Deploy tab, GitHub Actions. Previews of pull
 # requests need them turned on there too, a job in an environment with a required reviewer who
 # isn't whoever started it, `actions: read` for us to check that, and `pull-requests: write` for
-# the comment.
+# the comment. An app that deploys from an environment on any branch, with no branch named, needs
+# the same environment rule, and `actions: read` and `contents: read` for us to check it and who
+# approved the run. Only those runs send the job's own token, and only once Jiayang Cloud asks.
 # https://jiayang.cloud/docs/deploy/github-actions
 
 name: Deploy to Jiayang Cloud
@@ -35,15 +37,15 @@ inputs:
     required: false
     default: https://api.jiayang.cloud
   cli-version:
-    description: Which version of the jiayang CLI to install from npm, exactly. 0.1.11 or later for previews of pull requests.
+    description: Which version of the jiayang CLI to install from npm, exactly. 0.1.11 or later for previews of pull requests, and 0.1.12 or later for container.instances in jiayang.json.
     required: false
-    default: "0.1.11"
+    default: "0.1.12"
   args:
     description: More flags for jiayang deploy, such as --no-build or --kind static.
     required: false
     default: ""
   github-token:
-    description: For a pull request, the token Jiayang Cloud checks the pull request and its environment with, and the comment is written with. Needs actions read and pull-requests read, and pull-requests write for the comment.
+    description: The token Jiayang Cloud checks a pull request, or a run's environment and who approved it, with, and a pull request's comment is written with. Sent for a pull request, and for any other run only when Jiayang Cloud asks for it, which it does for an app that deploys from an environment on any branch. Needs actions read and contents read, pull-requests read for a pull request, and pull-requests write for the comment.
     required: false
     default: ${{ github.token }}
   comment:
@@ -142,7 +144,7 @@ runs:
     # The trade and the deploy are one step, so the credential is never left on disk between two:
     # a job cancelled, or a step skipped, after the trade can't leave a live one in RUNNER_TEMP.
     # The step trades with the OIDC request variables, then starts again without them, or the
-    # pull request's GITHUB_TOKEN, before anything of the project's runs.
+    # run's GITHUB_TOKEN, before anything of the project's runs.
     - name: Deploy
       id: deploy
       if: steps.event.outputs.mode != 'skip'
@@ -177,17 +179,6 @@ runs:
             echo "::error::The deploy step couldn't start again without the OIDC request variables."
             exit 1
           fi
-          audience=$(jq -rn --arg v "$JIAYANG_API" '$v | @uri')
-          # Tokens go to curl and jq on stdin or in their environment, never on a command line,
-          # which anything else in the job can read with ps. Neither call waits on a hung server.
-          oidc=$(curl --fail --silent --show-error --max-time 30 --proto '=https' -H @- \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$audience" \
-            <<<"Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" | jq -r '.value')
-          if [ -z "$oidc" ] || [ "$oidc" = "null" ]; then
-            echo "::error::GitHub gave this job no OIDC token."
-            exit 1
-          fi
-          echo "::add-mask::$oidc"
           # A pull request's run also sends its own GITHUB_TOKEN, which Jiayang Cloud uses once to
           # ask GitHub whether the pull request comes from a fork, and the pull request's number,
           # which the token of a run for a merged one doesn't carry.
@@ -200,16 +191,44 @@ runs:
               echo "::error::A pull request's preview needs the github-token input, which is the job's own token unless you change it."
               exit 1
             fi
-            request=$(OIDC="$oidc" jq -n --argjson pr "$PULL_REQUEST" '{token: env.OIDC, github_token: env.RUN_TOKEN, pull_request: $pr}')
-          else
-            request=$(OIDC="$oidc" jq -n '{token: env.OIDC}')
           fi
-          answer=$(printf '%s' "$request" | curl --silent --show-error --max-time 30 --proto '=https' \
-            -X POST -H 'content-type: application/json' --data-binary @- \
-            -w '\n%{http_code}' "$JIAYANG_API/v1/workspaces/$workspace/apps/$name/github/token")
-          unset oidc request
-          status=${answer##*$'\n'}
-          body=${answer%$'\n'*}
+          audience=$(jq -rn --arg v "$JIAYANG_API" '$v | @uri')
+          # Asks GitHub for a token for our API and trades it, setting `status` and `body` to the
+          # answer. With `with-run-token`, any other run sends its own GITHUB_TOKEN too.
+          # Tokens go to curl and jq on stdin or in their environment, never on a command line,
+          # which anything else in the job can read with ps. Neither call waits on a hung server.
+          trade() {
+            local oidc request answer
+            oidc=$(curl --fail --silent --show-error --max-time 30 --proto '=https' -H @- \
+              "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$audience" \
+              <<<"Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" | jq -r '.value')
+            if [ -z "$oidc" ] || [ "$oidc" = "null" ]; then
+              echo "::error::GitHub gave this job no OIDC token."
+              exit 1
+            fi
+            echo "::add-mask::$oidc"
+            if [ "$mode" = "preview" ] || [ "$mode" = "end" ]; then
+              request=$(OIDC="$oidc" jq -n --argjson pr "$PULL_REQUEST" '{token: env.OIDC, github_token: env.RUN_TOKEN, pull_request: $pr}')
+            elif [ "${1:-}" = "with-run-token" ]; then
+              request=$(OIDC="$oidc" jq -n '{token: env.OIDC, github_token: env.RUN_TOKEN}')
+            else
+              request=$(OIDC="$oidc" jq -n '{token: env.OIDC}')
+            fi
+            answer=$(printf '%s' "$request" | curl --silent --show-error --max-time 30 --proto '=https' \
+              -X POST -H 'content-type: application/json' --data-binary @- \
+              -w '\n%{http_code}' "$JIAYANG_API/v1/workspaces/$workspace/apps/$name/github/token")
+            status=${answer##*$'\n'}
+            body=${answer%$'\n'*}
+          }
+          trade
+          # Any other run sends its own GITHUB_TOKEN only when Jiayang Cloud asks for it, which it
+          # does for an app that deploys from an environment on any branch: it checks with it that
+          # someone other than whoever wrote or pushed the code approved the run. The first token
+          # isn't spent by being asked, but a fresh one goes with it all the same. Never kept.
+          if [ "$status" = "403" ] && [ "$mode" = "deploy" ] && [ -n "${RUN_TOKEN:-}" ] &&
+            [ "$(jq -r '.error // empty' <<<"$body" 2>/dev/null || true)" = "github_run_token" ]; then
+            trade with-run-token
+          fi
           if [ "$status" != "200" ]; then
             message=$(jq -r '.message // empty' <<<"$body" 2>/dev/null || true)
             echo "::error::${message:-Jiayang Cloud refused the token ($status).}"
@@ -232,7 +251,7 @@ runs:
           printf '%s' "$credential" > "$file"
           unset credential answer body
           # The build runs the project's own scripts and dependencies, which have no business
-          # asking GitHub for another token, or holding the pull request's. `unset` would leave
+          # asking GitHub for another token, or holding the run's. `unset` would leave
           # them in what /proc shows of this shell, so it starts again without them and no process
           # after this has them. The CLI withholds them from the build too.
           exec env -u ACTIONS_ID_TOKEN_REQUEST_TOKEN -u ACTIONS_ID_TOKEN_REQUEST_URL -u RUN_TOKEN \
