@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased (0.3.0)
+## 0.3.0 - 2026-10-16
 
 - An issuer or key set on http is refused unless `env.JIAYANG_DEV` is `"1"`, and even then only on this
   machine (`127.0.0.1`, `localhost` or `[::1]`, and for the keys `host.docker.internal` too).
