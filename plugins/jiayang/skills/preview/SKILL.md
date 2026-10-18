@@ -11,9 +11,13 @@ that already have a version live can have one.
 
 1. Call `deploy_app` with `preview: true`. The answer has the preview's address and its version
    number. Give the person the address.
-2. Ask the person to open the preview's address and try it. `call_app` reaches the live version,
-   not the preview.
+2. Check the preview answers with `call_app`, giving `preview` the version number. Without
+   `preview` it reaches the live version. If `call_app` has no `preview` parameter, the CLI is
+   older than 0.1.13 and would read the live version: ask the person to update it, and don't use
+   `call_app` to check the preview. Then ask the person to open the preview's address and try it.
 3. When the person says it's good, call `promote_preview` with that version. It goes live as it
    is. If they want to go back afterwards, `rollback` to the version that was live before.
+4. If they don't want it after all, call `end_preview` with the app and that `version`. Its
+   address stops answering at once, and the live version stays as it is.
 
 Don't promote a preview the person hasn't looked at.

@@ -162,6 +162,28 @@ func TestRefusesARequestWithNoTokenWhateverElseItCarries(t *testing.T) {
 	}
 }
 
+// Two identity headers were read as the first (17 Oct 2026). The Node SDK already refused them.
+func TestRefusesTwoIdentityHeaders(t *testing.T) {
+	f := setup(t)
+	token := good(t, nil)
+	r := httptest.NewRequest("GET", "/", nil)
+	r.Header.Add("x-jiayang-identity", token)
+	r.Header.Add("X-Jiayang-Identity", token)
+	if user, err := f.verifier.RequireUser(r); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("accepted two headers as %+v (err %v)", user, err)
+	}
+	if hook, err := f.verifier.RequireWebhook(r, ProviderStripe); !errors.Is(err, ErrUnauthorized) {
+		t.Fatalf("accepted two headers as %+v (err %v)", hook, err)
+	}
+}
+
+// The edge writes one aud string. jwt took a list holding the app's id (17 Oct 2026).
+func TestRefusesOurAudienceInAList(t *testing.T) {
+	f := setup(t)
+	f.refused(t, good(t, map[string]any{"aud": []string{app}}))
+	f.refused(t, good(t, map[string]any{"aud": []string{app, "x"}}))
+}
+
 func TestRefusesWhenTheAppIsntConfigured(t *testing.T) {
 	for _, c := range []Config{{Issuer: issuer, JWKSURL: jwksURL}, {AppID: app, JWKSURL: jwksURL}, {AppID: app, Issuer: issuer}} {
 		if _, err := NewVerifier(c); !errors.Is(err, ErrUnauthorized) {

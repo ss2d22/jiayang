@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- A share or a new member's reply says which day's budget stopped the invitation email, when one
+  did: `budget_spent` is `workspace`, `sender` or `platform`, beside `invited: "over_budget"`.
+- A share in the role the person already had says `unchanged: True`. Nothing changed and nothing
+  was logged.
+
 ## 0.1.0 - 2026-10-07
 
 - First release. A client for the Jiayang Cloud API: workspaces, members, apps, versions, deploys of

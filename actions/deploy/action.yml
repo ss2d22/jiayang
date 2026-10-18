@@ -39,7 +39,7 @@ inputs:
   cli-version:
     description: Which version of the jiayang CLI to install from npm, exactly. 0.1.11 or later for previews of pull requests, and 0.1.12 or later for container.instances in jiayang.json.
     required: false
-    default: "0.1.12"
+    default: "0.1.13"
   args:
     description: More flags for jiayang deploy, such as --no-build or --kind static.
     required: false

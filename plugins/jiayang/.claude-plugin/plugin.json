@@ -8,5 +8,5 @@
 	"homepage": "https://jiayang.cloud",
 	"repository": "https://github.com/ss2d22/jiayang",
 	"license": "Apache-2.0",
-	"keywords": ["deploy", "hosting", "sharing", "access-control", "cloudflare"]
+	"keywords": ["deploy", "hosting", "sharing", "access-control", "cloudflare", "mcp", "ai-agents", "internal-tools", "audit-log"]
 }

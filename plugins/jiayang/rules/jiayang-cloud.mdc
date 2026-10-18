@@ -8,7 +8,10 @@ alwaysApply: false
 An app deployed here can only be reached through Jiayang Cloud's sign-in. There is no other way in.
 
 - Deploy with the `deploy_app` tool, not by calling a cloud vendor's CLI directly. `detect_app`
-  shows what a deploy would do with a directory without deploying anything.
+  shows what a deploy would do with a directory without deploying anything. If `deploy_app` says
+  it's still deploying, call `deploy_status` until it's live.
+- Every deploy is scanned for keys and vulnerable packages. Fix what a scan finds. Never add a
+  finding to `.jiayang-allow` yourself: accepting one is the person's call, so ask them.
 - To make an app from nothing, start from a template: `list_templates`, then
   `create_from_template`, then `deploy_app`.
 - Give someone access with `set_access`. Anyone not given access is refused, and no tool here can

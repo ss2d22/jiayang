@@ -1,5 +1,44 @@
 # The Jiayang Cloud plugin
 
+Let Claude Code, Codex or Cursor put the app it built online at its own address, behind
+sign-in, and share it with the people you name. The agent can deploy, check the app answers, put
+up a preview, roll back, set secrets and schedules, read the logs and the audit log, and share or
+take access away. It works as you, so it can do what you can and no more, and every change shows in
+the audit log under your name. Some things stay with a person: opening an app to the internet,
+adding workspace members, signing in and paying among them.
+
+It needs the `jiayang` CLI installed and signed in:
+
+```sh
+jiayang login
+```
+
+Then install the plugin, or add the server by hand. Use one or the other, not both.
+
+- **Claude Code**: `/plugin marketplace add ss2d22/jiayang`, then
+  `/plugin install jiayang-cloud@jiayang-cloud`. Or add the server alone with
+  `claude mcp add --transport stdio jiayang-cloud -- jiayang mcp`.
+- **Codex**: `codex plugin marketplace add ss2d22/jiayang`, then
+  `codex plugin add jiayang-cloud@jiayang-cloud`. Start Codex in the project's directory.
+- **Cursor**: the plugin isn't in the Cursor Marketplace yet, so run this in the project, which
+  adds the server to `.cursor/mcp.json`:
+
+  ```sh
+  jiayang mcp install cursor
+  ```
+
+The server runs on your machine and talks to the Jiayang Cloud API the CLI is signed in to
+(`api.jiayang.cloud`), as you. It also reaches our image registry when it deploys a container app,
+your own apps when the agent calls one, and the repository or host you name when it imports an
+app. A deploy builds your project on your machine first, so only let an agent deploy a directory
+you would build yourself. The [privacy policy](https://jiayang.cloud/privacy) says what we keep, and
+[the docs](https://jiayang.cloud/docs/agents/) have the rest: every tool, and what only a person
+can do.
+
+The rest of this file is for whoever maintains the plugin.
+
+## How it's built
+
 The plugin gives four agent clients one MCP server. Every client starts it with the same
 command:
 
@@ -45,6 +84,13 @@ directory the client itself was started from. With no `PWD` it deploys nothing a
 `JIAYANG_MCP_ROOTS`. The other rules apply either way: paths are compared as real paths, and a
 root can't be your home directory, anything above it, or a hidden directory.
 
+A folder the client names by those variables, or by `CLAUDE_PLUGIN_ROOT` and
+`CLAUDE_PLUGIN_DATA`, is refused whichever root reaches it. `PLUGIN_ROOT` and `PLUGIN_DATA` count
+only when the server was started in `PLUGIN_ROOT` or it carries a manifest, so the same names left
+in a shell by another tool refuse nothing. A start directory known only by its manifest is refused
+only while it is the fallback. A project can carry a manifest of its own, like this plugin's
+source does, and deploys once `JIAYANG_MCP_ROOTS` or a client root names it.
+
 Each client reaches a different step in that order:
 
 - **Claude Code** expands `${CLAUDE_PROJECT_DIR}`, so `.mcp.json` sets `JIAYANG_MCP_ROOTS` outright.
@@ -83,7 +129,8 @@ in a marketplace also called `jiayang-cloud`.
   from team marketplaces: on a Teams or Enterprise plan an admin imports
   `https://github.com/ss2d22/jiayang` under **Dashboard**, **Plugins & MCPs**, **Add Marketplace**,
   which reads `.cursor-plugin/marketplace.json`. Everyone else runs `jiayang mcp install cursor` in
-  the project, which writes `.cursor/mcp.json` with the CLI's full path.
+  the project, which writes `.cursor/mcp.json` with the CLI's full path and nothing else, so
+  they get the tools without the skills or `rules/`.
 
 The marketplace entry and every manifest must use the same name. Codex refuses an install whose
 manifest name differs from the entry's, and `scripts/mirror.test.mjs` checks this.

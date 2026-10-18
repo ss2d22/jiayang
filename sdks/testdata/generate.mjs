@@ -163,6 +163,10 @@ const invalid = [
 	...Object.entries({
 		"another app's audience": { aud: OTHER_APP },
 		"another app in a list": { aud: [OTHER_APP] },
+		// The edge writes one string. A list holding the app's id was taken by every SDK, though the
+		// webhook path refused one (production, 17 Oct 2026).
+		"our audience in a list": { aud: [APP] },
+		"our audience in a list with another": { aud: [APP, "x"] },
 		"the wrong issuer": { iss: "https://evil.example.com" },
 		"not yet valid": { nbf: NOW + 30 },
 		"no exp": { exp: null },

@@ -170,6 +170,27 @@ class HostileTokens(Base):
         self.refused(sign(claims(aud=OTHER_APP)))
         self.refused(sign(claims(aud=[OTHER_APP])))
 
+    def test_an_audience_in_a_list_even_with_ours(self):
+        # The edge writes one string. PyJWT took a list holding the app's id (17 Oct 2026).
+        self.refused(sign(claims(aud=[APP])))
+        self.refused(sign(claims(aud=[APP, "x"])))
+
+    def test_two_identity_headers(self):
+        # Starlette's and Werkzeug's headers keep both, and get() read only the first (17 Oct 2026).
+        # The Node SDK already refused two.
+        from starlette.datastructures import Headers as StarletteHeaders
+        from werkzeug.datastructures import Headers as WerkzeugHeaders
+
+        token = sign(claims())
+        twice = [("x-jiayang-identity", token), ("x-jiayang-identity", token)]
+        for headers in (StarletteHeaders(raw=[(k.encode(), v.encode()) for k, v in twice]), WerkzeugHeaders(twice)):
+            with self.assertRaises(Unauthorized):
+                require_user(headers, CONFIG, now=NOW, keys=self.keys)
+        with self.assertRaises(Unauthorized):
+            require_user({"x-jiayang-identity": token, "X-Jiayang-Identity": token}, CONFIG, now=NOW, keys=self.keys)
+        once = StarletteHeaders(raw=[(b"x-jiayang-identity", token.encode())])
+        self.assertEqual(require_user(once, CONFIG, now=NOW, keys=self.keys).sub, "access-sub-alice")
+
     def test_wrong_issuer(self):
         self.refused(sign(claims(iss="https://evil.example.com")))
 

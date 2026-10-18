@@ -20,7 +20,7 @@ agent can't, so an agent can't be talked into opening your app to strangers.
    if it didn't.
 
 A change takes effect within a minute. Choosing "Nobody I can verify" opens the path with no check
-at all; the app then gets no token and has to treat every request as a stranger's.
+at all. The app then gets no token and has to treat every request as a stranger's.
 
 ## Providers
 
@@ -34,11 +34,11 @@ at all; the app then gets no token and has to treat every request as a stranger'
 | HMAC-SHA256 | whatever the sender signs with | none | no |
 
 Standard Webhooks covers Svix and the senders built on it, Resend among them. Those send `svix-id`,
-`svix-timestamp` and `svix-signature`; the spec's own names are `webhook-id` and the rest. The dialog
-asks which. For a generic sender, say which header holds the signature, whether it's hex or base64,
-and what comes before it, such as `sha256=`. It has to be HMAC-SHA256 over the raw body. Everyone
-who can see the app can read the header name and the prefix, so neither may hold the secret or
-anything shaped like a key.
+`svix-timestamp` and `svix-signature`, and the spec's own names are `webhook-id` and the rest. The
+dialog asks which. For a generic sender, say which header holds the signature, whether it's hex or
+base64, and what comes before it, such as `sha256=`. It has to be HMAC-SHA256 over the raw body.
+Everyone who can see the app can read the header name and the prefix, so neither may hold the secret
+or anything shaped like a key.
 
 For a provider that signs a time, a delivery signed more than 5 minutes before it arrives is refused,
 and so is one whose signed time is more than 5 minutes ahead of the platform's clock. That can be
@@ -143,7 +143,7 @@ which: reason `webhook_refused`, or `webhook_too_large`, with the check in `deta
 `webhook:stripe` in `jiayang watch`, `jiayang top` and `jiayang audit`.
 
 Verified deliveries don't count toward the workspace's requests, like all traffic to public paths.
-A workspace can take bursts of 600 verified deliveries and 10 a second after that; past that the
+A workspace can take bursts of 600 verified deliveries and 10 a second after that. Past that, the
 platform answers 429. Like the 402 and 403, that goes only to a delivery whose signature holds. A
 copy of a delivery that already got in doesn't count again, so nobody can use up the workspace's
 share by replaying one.
@@ -161,7 +161,7 @@ pointed at your path. Holding the address off would turn your real deliveries aw
 each delivery is judged on its own.
 
 A flood of forged deliveries at a path can get that path's real deliveries answered 503 while it
-lasts. Most providers retry them; GitHub doesn't, so redeliver those from the webhook's **Recent
+lasts. Most providers retry them. GitHub doesn't, so redeliver those from the webhook's **Recent
 Deliveries**. A delivery that finds every check it could use busy waits its turn for up to a second
 and a half before that, so a short burst turns nothing away. Paths under a flood share half of the
 checks between them, and the other half is kept for everyone else's. One workspace's paths under a

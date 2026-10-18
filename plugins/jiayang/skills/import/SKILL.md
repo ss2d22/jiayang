@@ -13,9 +13,9 @@ Bring an existing project over as a new app with the Jiayang Cloud tools, then d
    an import never changes an app that exists.
 
 2. **Know where it comes from.** `from` is one of:
-   - a git repository's https or ssh address, for Lovable, Bolt, v0 or anything on GitHub;
-   - a directory in this project with the code, such as an unzipped export;
-   - `replit`, with `directory` set to the Repl's files (it needs their `.replit`);
+   - a git repository's https or ssh address, for Lovable, Bolt, v0 or anything on GitHub,
+   - a directory in this project with the code, such as an unzipped export,
+   - `replit`, with `directory` set to the Repl's files (it needs their `.replit`),
    - `vercel:<project>` or `netlify:<site>`.
 
    For a repository, or Vercel or Netlify, also give `directory`: a new, empty directory inside

@@ -60,7 +60,7 @@ __all__ = [
     "verify_webhook",
 ]
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 IDENTITY_HEADER = "x-jiayang-identity"
 ALGORITHM = "RS256"
@@ -360,13 +360,24 @@ def _key_set(url: str) -> KeySet:
 
 
 def _header(headers: Mapping[str, Any]) -> str | None:
-    """Finds X-Jiayang-Identity in headers of any case, or in a WSGI environ."""
+    """Finds X-Jiayang-Identity in headers of any case, or in a WSGI environ.
+
+    The edge sends one. Two are refused, as the Node SDK refuses them, rather than reading the
+    first: Starlette's and Werkzeug's headers keep every copy, and ``get`` gives only one.
+    """
+    found = [
+        value
+        for name, value in headers.items()
+        if isinstance(name, str) and name.lower() in (IDENTITY_HEADER, "http_x_jiayang_identity") and value
+    ]
+    if len(found) > 1:
+        raise Unauthorized("invalid identity token")
+    if found:
+        return str(found[0])
+    # A mapping whose items() can't be walked for it, read the plain way.
     for name in (IDENTITY_HEADER, "X-Jiayang-Identity", "HTTP_X_JIAYANG_IDENTITY"):
         value = headers.get(name)
         if value:
-            return str(value)
-    for name, value in headers.items():
-        if isinstance(name, str) and name.lower() in (IDENTITY_HEADER, "http_x_jiayang_identity") and value:
             return str(value)
     return None
 
@@ -490,8 +501,9 @@ def _claims(token: str, key: Any, config: Config, now: float | None, audience: s
 
 def _verified(token: str, key: Any, config: Config, now: float | None) -> User:
     claims = _claims(token, key, config, now, config.app_id)
-    kind, sub, email, role, wid = (claims.get(k) for k in ("kind", "sub", "email", "role", "wid"))
-    if kind not in ("user", "service") or not isinstance(sub, str) or sub == "":
+    aud, kind, sub, email, role, wid = (claims.get(k) for k in ("aud", "kind", "sub", "email", "role", "wid"))
+    # PyJWT takes a list holding our audience as well. The edge writes a single string.
+    if not isinstance(aud, str) or kind not in ("user", "service") or not isinstance(sub, str) or sub == "":
         raise Unauthorized("invalid identity token")
     if kind == "user" and not isinstance(email, str):
         raise Unauthorized("invalid identity token")

@@ -1,6 +1,6 @@
 ---
 name: outbound
-description: Control which hosts an app on Jiayang Cloud may send requests to, and let it use the workspace's Anthropic or OpenAI key within a monthly budget. Use when the user wants to lock an app down to the services it needs, an outbound request is refused, or an app needs an AI provider.
+description: Control which hosts an app on Jiayang Cloud may send requests to, and let it use the workspace's AI provider keys (Anthropic, OpenAI, Gemini, Mistral, Groq, Cohere, Azure OpenAI or Amazon Bedrock) within a monthly budget. Use when the user wants to lock an app down to the services it needs, an outbound request is refused, or an app needs an AI provider.
 ---
 
 # Outbound requests and AI keys
@@ -22,8 +22,8 @@ passing the app again as `confirm`.
 
 ## AI keys
 
-A workspace can share its Anthropic or OpenAI key with apps. The app never sees the key: its
-requests to the provider carry it.
+A workspace can share its key for Anthropic, OpenAI, Gemini, Mistral, Groq, Cohere, Azure OpenAI
+or Amazon Bedrock with apps. The app never sees the key: its requests to the provider carry it.
 
 - `list_ai_keys` shows the workspace's keys (only their last four characters) and the apps using
   each. Storing a key is for an owner, with `jiayang ai key set`, never through you.
@@ -31,5 +31,6 @@ requests to the provider carry it.
   `none`. It spends the workspace's money, so only set the budget the person names.
 - `list_ai_budgets` shows an app's budgets and this month's spend.
 
-If the app's outbound list is on, it also needs the provider's host on it: `api.anthropic.com` or
-`api.openai.com`. The answer says so when it's missing.
+If the app's outbound list is on, it also needs the provider's host on it, like `api.anthropic.com`
+or `api.openai.com`, or the Azure resource or Bedrock region the key was stored for. The answer
+says so when it's missing.

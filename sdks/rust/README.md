@@ -32,7 +32,7 @@ The platform's are https and it never sets the variable, so nothing about verify
 ## axum
 
 ```toml
-jiayang = { version = "0.1", features = ["axum"] }
+jiayang = { version = "0.3", features = ["axum"] }
 ```
 
 ```rust
@@ -134,8 +134,8 @@ if user.kind != jiayang::Kind::Service || !user.sub.starts_with("scheduler:") {
 
 One of the workspace's [agents](https://jiayang.cloud/docs/access/agents/) arrives as `kind`
 `"service"` too, with a `sub` of `"agent:<agent id>"` and its name in `user.agent_name` (`None` for
-everyone else). `user.is_agent()` says whether an agent called. Show the name; decide what an agent
-may do by `sub`, since a name can change.
+everyone else). `user.is_agent()` says whether an agent called. Show the name, but decide what an
+agent may do by `sub`, since a name can change.
 
 ## Configuration
 

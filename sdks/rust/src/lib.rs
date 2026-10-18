@@ -337,6 +337,10 @@ impl Verifier {
         const INVALID: Unauthorized = Unauthorized("invalid identity token");
         let claims = self.claims(token, &self.config.app_id).await?;
         let text = |name: &str| claims.get(name).and_then(Value::as_str);
+        // jsonwebtoken takes a list holding our audience as well. The edge writes a single string.
+        if text("aud").is_none() {
+            return Err(INVALID);
+        }
         let kind = match text("kind") {
             Some("user") => Kind::User,
             Some("service") => Kind::Service,
@@ -455,6 +459,11 @@ impl Verifier {
 }
 
 fn token_in(headers: &HeaderMap) -> Result<&str, Unauthorized> {
+    // The edge sends one. Two are refused, as the Node SDK refuses them, rather than reading the
+    // first (17 Oct 2026).
+    if headers.get_all(IDENTITY_HEADER).iter().nth(1).is_some() {
+        return Err(Unauthorized("invalid identity token"));
+    }
     headers
         .get(IDENTITY_HEADER)
         .and_then(|v| v.to_str().ok())

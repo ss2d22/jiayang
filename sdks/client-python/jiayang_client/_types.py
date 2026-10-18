@@ -19,6 +19,7 @@ Driver = Literal["workers", "containers"]
 Visibility = Literal["private", "workspace"]
 ModuleType = Literal["esm", "text", "wasm", "data"]
 Invited = Literal["sent", "over_budget", "failed"]
+InvitationBudget = Literal["workspace", "sender", "platform"]
 Content = Union[str, bytes, bytearray, memoryview]
 
 
@@ -89,6 +90,7 @@ class Member(TypedDict):
     added_by_scim: NotRequired[bool]
     held: NotRequired[bool]
     invited: NotRequired[Invited]
+    budget_spent: NotRequired[InvitationBudget]
 
 
 class MemberRemoved(TypedDict):
@@ -186,6 +188,8 @@ class Grant(TypedDict):
     granted_by: str
     created_at: str
     invited: NotRequired[Invited]
+    budget_spent: NotRequired[InvitationBudget]
+    unchanged: NotRequired[bool]
 
 
 class DomainGrant(TypedDict):

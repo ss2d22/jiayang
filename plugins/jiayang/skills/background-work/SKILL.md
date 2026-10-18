@@ -19,7 +19,9 @@ and tell the person if it's Free rather than writing code that can't run.
    Queues producer). A container reaches them at `http://storage.jiayang.internal`, with
    `X-Jiayang-Storage: 1` on each request and never as a client default: `GET`, `PUT` and `DELETE`
    `/kv?key=...`, `GET /kv?prefix=...`, `POST /queue/send` with `{"body": ...}`. Don't add a
-   variable called `KV` or `QUEUE`: the deploy refuses it. A static site can have neither.
+   variable called `KV` or `QUEUE`. set_env refuses `KV` once the app has key-value storage and
+   `QUEUE` once it has a queue, and a Worker's deploy that asks for one is refused while the app
+   has a variable of that name. A static site can have neither.
 
 2. **Use KV for what's read often and written rarely.** A write can take a minute to show
    elsewhere, and one key takes about one write a second. Keep records that must be exact in the
@@ -45,6 +47,6 @@ and tell the person if it's Free rather than writing code that can't run.
 
 What KV holds counts toward the workspace's storage, and may take up to 10 GB of it on Team and
 Business. Reads, writes and queue messages count toward its database rows. Over storage, or past
-that share, apps with KV answer 507 until there's room: delete keys with `jiayang kv rm`, or move
+that share, apps with KV answer 507 until there's room: delete keys with `delete_kv_key`, or move
 to a bigger plan. Taking
-`kv` or `queue` out of jiayang.json deletes nothing; deleting the app does.
+`kv` or `queue` out of jiayang.json deletes nothing. Deleting the app does.

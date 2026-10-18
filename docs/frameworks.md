@@ -21,9 +21,9 @@ shell of an app whose pages never render.
 ## Astro
 
 Astro's own CSRF protection, `security.checkOrigin`, is **on by default** and refuses any non-GET
-request whose `Origin` header doesn't match the site. A browser always sends one; a machine never
-does. So an Astro app with an endpoint anything other than a browser calls (a webhook, a script,
-`jiayang curl`) rejects those calls with a 403 that looks like it came from the platform.
+request whose `Origin` header doesn't match the site. A browser always sends one, and a machine
+never does. So an Astro app with an endpoint anything other than a browser calls (a webhook, a
+script, `jiayang curl`) rejects those calls with a 403 that looks like it came from the platform.
 
 Turn it off and decide for yourself:
 
@@ -49,7 +49,7 @@ With `output: "static"` and no adapter, Astro deploys as files and none of this 
 
 `@opennextjs/cloudflare` runs the Next build itself, so `jiayang deploy` runs
 `opennextjs-cloudflare build` rather than your `build` script. Running `npm run build` would leave
-`.open-next/` unwritten and deploy nothing. You keep `"build": "next build"` as it is; the CLI
+`.open-next/` unwritten and deploy nothing. You keep `"build": "next build"` as it is. The CLI
 knows to use the adapter's command instead.
 
 Without OpenNext, Next.js is a container and `next start` is the start command.
@@ -59,7 +59,7 @@ Without OpenNext, Next.js is a container and `next start` is the start command.
 Each of these picks a target with its adapter, and the CLI follows whatever the adapter says.
 Swapping `@sveltejs/adapter-node` for `@sveltejs/adapter-cloudflare` moves an app from a container
 to a Worker, and the next deploy will say so, but it does not migrate anything. An app that has
-already shipped stays on the driver it was created with; the CLI refuses the switch rather than
+already shipped stays on the driver it was created with. The CLI refuses the switch rather than
 losing the app's data.
 
 ## Vite

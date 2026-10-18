@@ -38,9 +38,9 @@ A scheduled job is `"service"` too, with a `user.sub` that starts with `"schedul
 before doing the job: anyone the app is shared with can call the same path.
 One of the workspace's agents is `"service"` as well, with a `user.sub` of `"agent:<agent id>"` and
 its name in `user.agent_name` (`None` for everyone else). `user.is_agent` says whether an agent
-called. Show the name; decide what an agent may do by `sub`, since a name can change.
+called. Show the name, but decide what an agent may do by `sub`, since a name can change.
 `user.role` is the caller's access to this app: `viewer`, `editor` or `owner`, in that order.
-`require_role(user, "editor")` raises `Forbidden`; `has_role` checks without raising.
+`require_role(user, "editor")` raises `Forbidden`, and `has_role` checks without raising.
 
 ## Your framework
 
@@ -108,7 +108,7 @@ def place_order(request):
 
 The middleware sets `request.jiayang_user` to the caller or `None` and refuses nothing itself, so
 an app can have both public and private pages. `login_required` and `role_required` do the
-refusing: 401 without an identity, 403 with too low a role. Import them from `jiayang.django`;
+refusing: 401 without an identity, 403 with too low a role. Import them from `jiayang.django`.
 Django's own `login_required` checks Django's sessions and redirects to `LOGIN_URL`.
 
 ### Streamlit

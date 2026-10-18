@@ -6,7 +6,7 @@
 	"homepage": "https://jiayang.cloud",
 	"repository": "https://github.com/ss2d22/jiayang",
 	"license": "Apache-2.0",
-	"keywords": ["deploy", "hosting", "access-control", "cloudflare"],
+	"keywords": ["deploy", "hosting", "access-control", "cloudflare", "mcp", "ai-agents", "internal-tools", "audit-log"],
 	"skills": "./skills",
 	"mcpServers": "./.mcp.json",
 	"interface": {

@@ -17,7 +17,8 @@ without a person. A bypass token is for one app only and isn't named in the log 
 Inside the app, a request from an agent has an identity token whose `sub` starts with `agent:`.
 `requireUser()` accepts it, so check the role or the `sub` if only agents should do something.
 
-- `list_agents` shows each agent, its apps and its credentials, never the secrets.
+- `list_agents` shows each live agent, its apps and its credentials, never the secrets. Pass
+  `all: true` for the ended agents too.
 - `revoke_agent_credential` ends one credential on its next request. The agent stays.
 - `set_agent_access` with `none` takes an app away. `end_agent` ends the agent for good. Pass it
   again as `confirm`.

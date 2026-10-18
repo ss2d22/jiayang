@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.1 - 2026-10-19
+
+- `RequireUser` and `Verify` refuse a token whose `aud` is a list, even one holding the app's id.
+  The edge writes one string, and `RequireWebhook` already refused a list.
+- A request with two `X-Jiayang-Identity` headers is refused, as the Node SDK refuses it. It read
+  the first.
+
 ## 0.3.0 - 2026-10-16
 
 - An issuer or key set on http is refused unless `JIAYANG_DEV` is `1`, and even then only on this
@@ -14,7 +21,7 @@
 
 - `User` has `AgentName`: the name of the workspace's agent that made the request, or empty for a
   person, a bypass token or a scheduled job. `user.IsAgent()` says whether an agent called. Decide
-  what an agent may do by `Sub`, which is `agent:<agent id>`; the name can change.
+  what an agent may do by `Sub`, which is `agent:<agent id>`. The name can change.
 - `User` marshals `agent_name` too, `null` when empty, as the other SDKs write it.
 - An agent's identity token with no name, an empty one, or an empty agent id is refused, as a
   person's with no email is. The platform always sends one.

@@ -11,9 +11,11 @@ that only carries `X-Jiayang-Email`.
 go get jiayang.cloud/sdk
 ```
 
-Fetching it needs Go 1.25 or newer. The module lives in a subdirectory of its repository, and 1.25
-is the first go command that follows a `go-import` meta tag naming a subdirectory ([Go 1.25
-release notes]).
+Through the default module proxy, any Go the module takes (1.22 or newer) fetches it. With
+`GOPROXY=direct`, or `GOPRIVATE` or `GONOPROXY` covering `jiayang.cloud`, the go command reads our
+`go-import` meta tag itself, and that needs Go 1.25 or newer: the module lives in a subdirectory of
+its repository, and 1.25 is the first go command that follows a tag naming one ([Go 1.25 release
+notes]).
 
 ```go
 import jiayang "jiayang.cloud/sdk"
@@ -103,7 +105,7 @@ Name the provider or providers the route takes: `ProviderStripe`, `ProviderGitHu
 `ProviderSlack`, `ProviderShopify`, `ProviderStandardWebhooks` or `ProviderHMACSHA256`. A delivery
 from any other is refused, and so is every delivery when none is named, so a Stripe route can't be
 handed a GitHub delivery after a pattern is widened. `RequireUser` refuses a webhook's token and
-`RequireWebhook` refuses a person's; each refusal matches `errors.Is(err, jiayang.ErrUnauthorized)`.
+`RequireWebhook` refuses a person's. Each refusal matches `errors.Is(err, jiayang.ErrUnauthorized)`.
 
 `hook.Pattern` is the public path it came in on, such as `/hooks/stripe` or `/hooks/*`.
 `hook.Delivery` is the provider's signed id for it and `hook.SignedAt` the signed time, each where
@@ -140,7 +142,7 @@ A scheduled job is `"service"` too, with a `user.Sub` that starts with `"schedul
 before doing the job: anyone the app is shared with can call the same path.
 One of the workspace's agents is `"service"` as well, with a `user.Sub` of `"agent:<agent id>"` and
 its name in `user.AgentName` (empty for everyone else). `user.IsAgent()` says whether an agent
-called. Show the name; decide what an agent may do by `Sub`, since a name can change.
+called. Show the name, but decide what an agent may do by `Sub`, since a name can change.
 `user.Role` is the caller's access to this app.
 
 `User` and `Webhook` marshal to JSON with the names the Python and Rust SDKs use (`workspace_id`,

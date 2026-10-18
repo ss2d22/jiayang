@@ -135,8 +135,10 @@ export async function requireUser(request: Request, env: JiayangEnv, options: Ve
 /** Like requireUser, for a token you already have. */
 export async function verifyIdentity(token: string, env: JiayangEnv, options: VerifyOptions = {}): Promise<User> {
 	const payload = await verified(token, env, options, "");
-	const { kind, sub, email, role, wid } = payload;
-	if ((kind !== "user" && kind !== "service") || typeof sub !== "string" || sub === "") {
+	const { aud, kind, sub, email, role, wid } = payload;
+	// jose takes a list holding our audience as well. The edge writes a single string, as the
+	// webhook check below has it too.
+	if (typeof aud !== "string" || (kind !== "user" && kind !== "service") || typeof sub !== "string" || sub === "") {
 		throw new Unauthorized("invalid identity token");
 	}
 	if (kind === "user" && typeof email !== "string") throw new Unauthorized("invalid identity token");

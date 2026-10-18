@@ -178,6 +178,29 @@ async fn refuses_a_request_with_no_token_whatever_else_it_carries() {
     assert!(f.verifier.require_user(&headers).await.is_err());
 }
 
+// Two identity headers were read as the first (17 Oct 2026). The Node SDK already refused them.
+#[tokio::test]
+async fn refuses_two_identity_headers() {
+    let f = setup();
+    let token = HeaderValue::from_str(&good(json!({}))).unwrap();
+    let mut headers = HeaderMap::new();
+    headers.append("x-jiayang-identity", token.clone());
+    headers.append("X-Jiayang-Identity", token.clone());
+    assert_eq!(f.verifier.require_user(&headers).await, Err(Unauthorized("invalid identity token")));
+    assert!(f.verifier.require_webhook(&headers, &[jiayang::Provider::Stripe]).await.is_err());
+    let mut once = HeaderMap::new();
+    once.insert("x-jiayang-identity", token);
+    assert!(f.verifier.require_user(&once).await.is_ok());
+}
+
+// The edge writes one aud string. jsonwebtoken took a list holding the app's id (17 Oct 2026).
+#[tokio::test]
+async fn refuses_our_audience_in_a_list() {
+    let f = setup();
+    f.refused(&good(json!({ "aud": [APP] }))).await;
+    f.refused(&good(json!({ "aud": [APP, "x"] }))).await;
+}
+
 #[test]
 fn refuses_when_the_app_isnt_configured() {
     let full = Config { app_id: APP.into(), issuer: ISSUER.into(), jwks_url: JWKS_URL.into(), dev: false };

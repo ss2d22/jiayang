@@ -1,6 +1,6 @@
 {
 	"name": "@jiayang-cloud/sdk",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"description": "Verify who is calling your Jiayang Cloud app.",
 	"license": "Apache-2.0",
 	"repository": {
@@ -8,14 +8,20 @@
 		"url": "git+https://github.com/ss2d22/jiayang.git",
 		"directory": "sdks/node"
 	},
-	"homepage": "https://jiayang.cloud",
+	"homepage": "https://jiayang.cloud/docs/sdks/node/",
 	"bugs": "https://github.com/ss2d22/jiayang/issues",
 	"keywords": [
 		"jiayang",
 		"identity",
 		"jwt",
 		"auth",
-		"cloudflare"
+		"cloudflare",
+		"cloudflare-workers",
+		"express",
+		"hono",
+		"nextjs",
+		"middleware",
+		"access-control"
 	],
 	"type": "module",
 	"main": "./dist/index.cjs",

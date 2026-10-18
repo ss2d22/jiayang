@@ -257,11 +257,23 @@ func NewVerifier(config Config, options ...Option) (*Verifier, error) {
 
 // RequireUser returns the verified caller of r, or an error wrapping ErrUnauthorized.
 func (v *Verifier) RequireUser(r *http.Request) (User, error) {
-	token := r.Header.Get(IdentityHeader)
+	token, err := identityHeader(r)
+	if err != nil {
+		return User{}, err
+	}
 	if token == "" {
 		return User{}, refuse("no identity token")
 	}
 	return v.Verify(token)
+}
+
+// identityHeader is the one X-Jiayang-Identity the edge sends. Two are refused, as the Node SDK
+// refuses them, rather than reading the first (17 Oct 2026).
+func identityHeader(r *http.Request) (string, error) {
+	if len(r.Header.Values(IdentityHeader)) > 1 {
+		return "", refuse("invalid identity token")
+	}
+	return r.Header.Get(IdentityHeader), nil
 }
 
 type identityClaims struct {
@@ -279,7 +291,9 @@ func (v *Verifier) Verify(token string) (User, error) {
 	if err != nil {
 		return User{}, err
 	}
-	if c.IssuedAt == nil || c.Subject == "" || (c.Kind != "user" && c.Kind != "service") {
+	// jwt takes a list holding our audience as well. The edge writes a single string.
+	_, oneAudience := jsonString(raw["aud"])
+	if c.IssuedAt == nil || c.Subject == "" || (c.Kind != "user" && c.Kind != "service") || !oneAudience {
 		return User{}, refuse("invalid identity token")
 	}
 	if (c.Kind == "user" && c.Email == nil) || c.Role == nil || c.WID == nil {
@@ -589,7 +603,10 @@ const maxExact = 1<<53 - 1
 // error wrapping ErrUnauthorized. A person's or a bypass token's identity is refused, as a
 // webhook's is by RequireUser.
 func (v *Verifier) RequireWebhook(r *http.Request, providers ...Provider) (Webhook, error) {
-	token := r.Header.Get(IdentityHeader)
+	token, err := identityHeader(r)
+	if err != nil {
+		return Webhook{}, err
+	}
 	if token == "" {
 		return Webhook{}, refuse("no identity token")
 	}

@@ -8,7 +8,7 @@ One command for every kind of app. It works out what the directory is, builds it
 would, and puts it behind the same front door as everything else.
 
 `jiayang detect` does the working-out and stops, so you can see what it decided before it does
-anything. It reads files; it runs nothing and reaches nothing.
+anything. It reads files, and it runs nothing and reaches nothing.
 
 ```
 $ jiayang detect
@@ -32,8 +32,8 @@ The first rule that matches wins, and every answer carries the reason.
 6. A **Node server** (a start script, Express, Fastify, Koa, NestJS, hapi, or a server-rendering
    framework with no Cloudflare adapter) → a container.
 7. **Python, Go or Rust** markers → a container.
-8. With no `package.json`: a root `index.html` → static; one of today's entry files → a Worker that
-   goes up as it stands, no Node needed.
+8. With no `package.json`: a root `index.html` → static, and one of today's entry files → a
+   Worker that goes up as it stands, no Node needed.
 9. Otherwise it stops and lists every signal it looked for.
 
 What "a Cloudflare adapter" means, exactly: `@opennextjs/cloudflare`, `@astrojs/cloudflare`,
@@ -46,7 +46,7 @@ Same framework, different answer, depending on which adapter is installed. See
 
 ## Saying it yourself
 
-`jiayang.json`, next to the app. Everything is optional; it only overrides what detection would
+`jiayang.json`, next to the app. Everything is optional. It only overrides what detection would
 have decided. Unknown keys are an error rather than a typo that does nothing.
 
 ```json
@@ -118,7 +118,7 @@ jiayang env set acme/hello API_BASE=https://api.example.com
 jiayang env list acme/hello
 ```
 
-Workers get them as bindings; containers get them as environment variables. Changing one
+Workers get them as bindings, and containers get them as environment variables. Changing one
 re-pushes the running version, so code that reads it at runtime sees the change at once.
 Environment belongs to the app rather than a version, so a rollback keeps the current values.
 

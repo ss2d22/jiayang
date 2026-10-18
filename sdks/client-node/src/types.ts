@@ -82,8 +82,16 @@ export interface PutMember {
 /** What became of the invitation email. The access stands either way. */
 export type Invited = "sent" | "over_budget" | "failed";
 
+/**
+ * Whose day of invitation emails was spent, when one was: the workspace's, the sender's across all
+ * their workspaces, or the whole platform's.
+ */
+export type InvitationBudget = "workspace" | "sender" | "platform";
+
 export interface PutMemberReply extends Member {
 	invited?: Invited;
+	/** Set when `invited` is `over_budget`. */
+	budget_spent?: InvitationBudget;
 }
 
 export interface MemberRemoved {
@@ -211,6 +219,10 @@ export interface Grant {
 
 export interface PutGrantReply extends Grant {
 	invited?: Invited;
+	/** Set when `invited` is `over_budget`. */
+	budget_spent?: InvitationBudget;
+	/** They had this role already, so nothing changed. */
+	unchanged?: boolean;
 }
 
 export interface DomainGrant {

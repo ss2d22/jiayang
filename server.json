@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ss2d22/jiayang",
+  "title": "Jiayang Cloud",
+  "description": "Deploy an app from your coding agent, share it by email, and see who opened it. Apps stay private.",
+  "websiteUrl": "https://jiayang.cloud/docs/agents/",
+  "repository": {
+    "url": "https://github.com/ss2d22/jiayang",
+    "source": "github"
+  },
+  "version": "0.1.13",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "jiayang",
+      "version": "0.1.13",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "valueHint": "mcp",
+          "value": "mcp",
+          "description": "Runs the CLI as an MCP server over stdio. Sign in first with jiayang login."
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "JIAYANG_MCP_ROOTS",
+          "description": "The one absolute directory a deploy may read from, for a client that offers no roots and starts the server outside the project.",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

@@ -18,12 +18,12 @@ the project if you'd rather own it.
 
 Every template pins its base images by digest and runs as a non-root user with `PORT=8080`, under
 tini, so `SIGTERM` reaches the app rather than stopping at process 1. Node, Go and Rust build in one
-stage and run in another, so the compiler and what the build leaves behind stay out of the image;
+stage and run in another, so the compiler and what the build leaves behind stay out of the image.
 Python is a single stage. None of them take a build argument or mount a secret.
 
 | Runtime | Built with | Starts |
 |---|---|---|
-| Node | npm ci, pnpm via corepack, yarn immutable or bun frozen, from whichever lockfile you have (with none, `npm install`); then `npm run build` if you have one, then dev dependencies pruned | `npm start` |
+| Node | npm ci, pnpm via corepack, yarn immutable or bun frozen, from whichever lockfile you have (with none, `npm install`), then `npm run build` if you have one, then dev dependencies pruned | `npm start` |
 | Python | `uv sync --frozen` with a `uv.lock`, `poetry install` with a `poetry.lock`, otherwise pip: `requirements.txt`, or the project itself from `pyproject.toml` | see below |
 | Go | a static binary, on distroless | the binary |
 | Rust | `--locked` release build, on bookworm-slim | the binary |
@@ -60,7 +60,7 @@ Dockerfile  .dockerignore
 
 Beyond that, the build refuses to start if it would copy something that looks like a live
 credential, and says which file. What those patterns leave out isn't counted, so a `.venv` or a
-local `.env` is no reason to refuse; a pattern with no slash in it only matches at the top level,
+local `.env` is no reason to refuse. A pattern with no slash in it only matches at the top level,
 though, so `config/tls.key` still is:
 
 ```

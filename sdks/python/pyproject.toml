@@ -1,14 +1,17 @@
 [project]
 name = "jiayang"
-version = "0.3.0"
+version = "0.3.1"
 description = "Verify who is calling your Jiayang Cloud app."
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "The Jiayang Cloud Authors" }]
-keywords = ["jiayang", "identity", "jwt", "auth"]
+keywords = ["jiayang", "identity", "jwt", "auth", "flask", "fastapi", "django", "streamlit", "gradio", "middleware", "access-control"]
 classifiers = [
     "Development Status :: 4 - Beta",
+    "Framework :: Django",
+    "Framework :: FastAPI",
+    "Framework :: Flask",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",

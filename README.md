@@ -1,6 +1,7 @@
 # Jiayang Cloud
 
-Deploy an app in one step, share it by email, and see who used it.
+Jiayang Cloud deploys the apps you and your AI agents build, keeps each one behind sign-in, and
+lets you share it by email and see who opened it.
 
 ```sh
 curl -fsSL https://jiayang.cloud/install.sh | sh
@@ -101,7 +102,7 @@ jiayang dev                      # works out how to start your app
 jiayang dev -- npm run dev       # or say it yourself
 ```
 
-A Worker or a site runs under `wrangler dev`; a site is served as its last build left it. A server
+A Worker or a site runs under `wrangler dev`. A site is served as its last build left it. A server
 starts the way its image would, here: `npm start`, uvicorn, `flask run`, `manage.py runserver`,
 `go run` or `cargo run`. A Dockerfile says how to build an app rather than how to run it on your
 machine, so for one of those, say it yourself.
@@ -139,7 +140,7 @@ minutes. `deploy_app` answers within 45 seconds. A deploy still running then car
 waits for it with `deploy_status`, so no client needs a longer timeout.
 
 Every tool acts as whoever the CLI is signed in as, with your permissions and under your name in
-the audit log. No tool can open a path to the internet or change a webhook verifier; a person does
+the audit log. No tool can open a path to the internet or change a webhook verifier. A person does
 that in the dashboard.
 
 ## What deploys

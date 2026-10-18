@@ -1,6 +1,6 @@
 [package]
 name = "jiayang"
-version = "0.3.0"
+version = "0.3.1"
 description = "Verify who is calling your Jiayang Cloud app."
 edition.workspace = true
 rust-version.workspace = true
@@ -9,8 +9,8 @@ repository = "https://github.com/ss2d22/jiayang"
 homepage = "https://jiayang.cloud"
 documentation = "https://docs.rs/jiayang"
 readme = "README.md"
-keywords = ["jiayang", "identity", "jwt", "auth"]
-categories = ["authentication", "web-programming"]
+keywords = ["jwt", "auth", "identity", "axum", "access-control"]
+categories = ["authentication", "web-programming", "web-programming::http-server"]
 include = ["src/**", "Cargo.toml", "CHANGELOG.md", "README.md", "LICENSE", "NOTICE"]
 
 [features]

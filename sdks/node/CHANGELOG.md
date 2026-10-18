@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 - 2026-10-19
+
+- `requireUser` and `verifyIdentity` refuse a token whose `aud` is a list, even one holding the
+  app's id. The edge writes one string, and `requireWebhook` already refused a list.
+
 ## 0.3.0 - 2026-10-16
 
 - An issuer or key set on http is refused unless `env.JIAYANG_DEV` is `"1"`, and even then only on this
@@ -15,7 +20,7 @@
 
 - A caller has `agentName`: the name of the workspace's agent that made the request, or `null` for
   a person, a bypass token or a scheduled job. `isAgent(user)` says whether an agent called. Decide
-  what an agent may do by `sub`, which is `agent:<agent id>`; the name can change.
+  what an agent may do by `sub`, which is `agent:<agent id>`. The name can change.
 - An agent's identity token with no name, an empty one, or an empty agent id is refused, as a
   person's with no email is. The platform always sends one.
 - `User` has a new required field, so code that builds a `User` by hand (in tests, say) needs

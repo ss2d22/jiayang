@@ -19,7 +19,7 @@ Install the SDK for the language. It is published only under these names:
 |---|---|---|
 | JS/TS: Workers, Node, Next.js, Express, Deno, Bun | `npm install @jiayang-cloud/sdk` | `@jiayang-cloud/sdk`, `@jiayang-cloud/sdk/next`, `@jiayang-cloud/sdk/express` |
 | Python | `pip install jiayang`, or `jiayang[flask]`, `[fastapi]`, `[django]`, `[streamlit]`, `[gradio]` | `jiayang`, `jiayang.flask`, `jiayang.fastapi`, ... |
-| Go (1.25 or newer) | `go get jiayang.cloud/sdk` | `import jiayang "jiayang.cloud/sdk"` |
+| Go (1.22 or newer, 1.25 with `GOPROXY=direct`) | `go get jiayang.cloud/sdk` | `import jiayang "jiayang.cloud/sdk"` |
 | Rust | `cargo add jiayang`, with `--features axum` for the extractor and layer | `jiayang` |
 
 The Go module is `jiayang.cloud/sdk`. Fetching it by its GitHub path fails with a module path
