@@ -1,6 +1,6 @@
 [project]
 name = "jiayang-client"
-version = "0.1.0"
+version = "0.1.1"
 description = "Call the Jiayang Cloud API from code: deploy, share, read the audit log and manage tokens."
 readme = "README.md"
 license = "Apache-2.0"

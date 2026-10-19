@@ -55,7 +55,7 @@ import type {
 	Workspace,
 } from "./types.js";
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.1.1";
 
 export interface ClientOptions {
 	/** A CLI session token (`jyu_`), or a GitHub Actions run's deploy credential (`jyg_`). Left

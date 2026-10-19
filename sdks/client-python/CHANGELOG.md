@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 - 2026-10-19
 
 - A share or a new member's reply says which day's budget stopped the invitation email, when one
   did: `budget_spent` is `workspace`, `sender` or `platform`, beside `invited: "over_budget"`.

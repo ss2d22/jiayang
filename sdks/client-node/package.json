@@ -1,6 +1,6 @@
 {
 	"name": "@jiayang-cloud/client",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Call the Jiayang Cloud API from code: deploy, share, read the audit log and manage tokens.",
 	"license": "Apache-2.0",
 	"repository": {
